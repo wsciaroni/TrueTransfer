@@ -35,6 +35,13 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  dart_smb2: ^0.1.0
+  file_picker: ^8.1.2
+  crypto: ^3.0.3
+  path_provider: ^2.1.3
+  path: ^1.9.0
+  flutter_secure_storage: ^9.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -87,3 +94,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+dependency_overrides:
+  flutter_secure_storage_windows:
+    path: ./flutter_secure_storage_windows_override
