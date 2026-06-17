@@ -92,8 +92,8 @@ class SummaryScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: hasFailed
-              ? Colors.redAccent.withOpacity(0.3)
-              : Colors.green.withOpacity(0.3),
+              ? Colors.redAccent.withValues(alpha: 0.3)
+              : Colors.green.withValues(alpha: 0.3),
           width: 1.5,
         ),
       ),
@@ -102,8 +102,8 @@ class SummaryScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: (hasFailed ? Colors.redAccent : Colors.green).withOpacity(
-                0.15,
+              color: (hasFailed ? Colors.redAccent : Colors.green).withValues(
+                alpha: 0.15,
               ),
               shape: BoxShape.circle,
             ),

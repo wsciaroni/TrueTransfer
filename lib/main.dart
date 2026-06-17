@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
         ),
         navigationBarTheme: NavigationBarThemeData(
           backgroundColor: Colors.grey[950],
-          indicatorColor: Colors.blueAccent.withOpacity(0.15),
+          indicatorColor: Colors.blueAccent.withValues(alpha: 0.15),
         ),
       ),
       home: const HomePage(),

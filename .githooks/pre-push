@@ -1,0 +1,19 @@
+#!/bin/sh
+# pre-push hook
+
+echo "Running flutter build apk..."
+flutter build apk --release
+if [ $? -ne 0 ]; then
+  echo "Flutter build apk failed."
+  exit 1
+fi
+
+echo "Running flutter build windows..."
+flutter build windows --release
+if [ $? -ne 0 ]; then
+  echo "Flutter build windows failed."
+  exit 1
+fi
+
+echo "All pre-push checks passed."
+exit 0

@@ -28,7 +28,7 @@ class SmbFileTransfer {
     // Ensure intermediate directories exist
     await _ensureParentDirectoriesExist(remotePath);
 
-    final tempPath = remotePath + '.part';
+    final tempPath = '$remotePath.part';
 
     // 1. Determine resume offset
     int currentOffset = resumeOffset;

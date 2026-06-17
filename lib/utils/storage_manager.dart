@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../models/transfer_queue.dart';
@@ -29,7 +30,7 @@ class StorageManager {
       await file.writeAsString(jsonString);
     } catch (e) {
       // Log error or rethrow
-      print('Error saving queue: $e');
+      debugPrint('Error saving queue: $e');
     }
   }
 
@@ -42,7 +43,7 @@ class StorageManager {
         return TransferQueue.fromJson(jsonMap);
       }
     } catch (e) {
-      print('Error loading queue: $e');
+      debugPrint('Error loading queue: $e');
     }
     return TransferQueue(items: []);
   }
@@ -54,7 +55,7 @@ class StorageManager {
         await file.delete();
       }
     } catch (e) {
-      print('Error clearing queue file: $e');
+      debugPrint('Error clearing queue file: $e');
     }
   }
 
@@ -64,7 +65,7 @@ class StorageManager {
       final jsonString = jsonEncode(info.toJson());
       await secureStorage.write(key: _connectionKey, value: jsonString);
     } catch (e) {
-      print('Error saving connection info: $e');
+      debugPrint('Error saving connection info: $e');
     }
   }
 
@@ -76,7 +77,7 @@ class StorageManager {
         return SmbConnectionInfo.fromJson(jsonMap);
       }
     } catch (e) {
-      print('Error loading connection info: $e');
+      debugPrint('Error loading connection info: $e');
     }
     return null;
   }
@@ -85,7 +86,7 @@ class StorageManager {
     try {
       await secureStorage.delete(key: _connectionKey);
     } catch (e) {
-      print('Error clearing connection info: $e');
+      debugPrint('Error clearing connection info: $e');
     }
   }
 
@@ -94,7 +95,7 @@ class StorageManager {
       final jsonString = jsonEncode(settings);
       await secureStorage.write(key: _settingsKey, value: jsonString);
     } catch (e) {
-      print('Error saving transfer settings: $e');
+      debugPrint('Error saving transfer settings: $e');
     }
   }
 
@@ -105,7 +106,7 @@ class StorageManager {
         return jsonDecode(jsonString) as Map<String, dynamic>;
       }
     } catch (e) {
-      print('Error loading transfer settings: $e');
+      debugPrint('Error loading transfer settings: $e');
     }
     return null;
   }
@@ -114,7 +115,7 @@ class StorageManager {
     try {
       await secureStorage.delete(key: _settingsKey);
     } catch (e) {
-      print('Error clearing transfer settings: $e');
+      debugPrint('Error clearing transfer settings: $e');
     }
   }
 }

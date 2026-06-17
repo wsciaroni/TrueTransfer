@@ -72,8 +72,8 @@ class _HomePageState extends State<HomePage> {
                 ),
                 decoration: BoxDecoration(
                   color: _controller.isConnected
-                      ? Colors.green[950]?.withOpacity(0.4)
-                      : Colors.red[950]?.withOpacity(0.4),
+                      ? Colors.green[950]?.withValues(alpha: 0.4)
+                      : Colors.red[950]?.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: _controller.isConnected
@@ -116,7 +116,7 @@ class _HomePageState extends State<HomePage> {
           ),
           bottomNavigationBar: NavigationBarTheme(
             data: NavigationBarThemeData(
-              indicatorColor: Colors.blueAccent.withOpacity(0.15),
+              indicatorColor: Colors.blueAccent.withValues(alpha: 0.15),
               labelTextStyle: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
                   return const TextStyle(

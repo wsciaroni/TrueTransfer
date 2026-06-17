@@ -191,10 +191,13 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accentColor.withOpacity(0.3), width: 1.5),
+        border: Border.all(
+          color: accentColor.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: accentColor.withOpacity(0.05),
+            color: accentColor.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -205,7 +208,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.15),
+              color: accentColor.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: accentColor, size: 32),
