@@ -10,6 +10,7 @@ class FakeSmbService implements SmbService {
   bool isConnected = false;
   
   final Map<String, Uint8List> files = {};
+  final Set<String> directories = {};
   
   bool failOperations = false;
   int operationFailureCount = 0;
@@ -34,7 +35,13 @@ class FakeSmbService implements SmbService {
   @override
   Future<bool> exists(String path) async {
     _maybeFail();
-    return files.containsKey(path);
+    return files.containsKey(path) || directories.contains(path);
+  }
+
+  @override
+  Future<void> createDirectory(String path) async {
+    _maybeFail();
+    directories.add(path);
   }
 
   @override
@@ -135,6 +142,24 @@ void main() {
       // Verify the temporary .part file is gone
       expect(fakeSmbService.files.containsKey('backup/test_file.txt.part'), isFalse);
       // Verify local source file is deleted (transaction completed)
+      expect(localFile.existsSync(), isFalse);
+    });
+
+    test('Nested directory creation during transfer', () async {
+      await fileTransfer.transferFile(
+        localPath: localFile.path,
+        remotePath: 'folder1/folder2/nested_file.txt',
+        onProgress: (transferred, total) {},
+        checkCancelled: () => false,
+        checkPaused: () => false,
+      );
+
+      // Verify the directories were created on the remote
+      expect(fakeSmbService.directories.contains('folder1'), isTrue);
+      expect(fakeSmbService.directories.contains('folder1/folder2'), isTrue);
+
+      // Verify the final file exists
+      expect(fakeSmbService.files.containsKey('folder1/folder2/nested_file.txt'), isTrue);
       expect(localFile.existsSync(), isFalse);
     });
 

@@ -23,6 +23,10 @@ class SmbFileTransfer {
       throw Exception('Source file does not exist: $localPath');
     }
     final totalBytes = await localFile.length();
+    
+    // Ensure intermediate directories exist
+    await _ensureParentDirectoriesExist(remotePath);
+
     final tempPath = remotePath + '.part';
 
     // 1. Determine resume offset
@@ -109,6 +113,28 @@ class SmbFileTransfer {
     }
     output.close();
     return sink.value?.toString() ?? '';
+  }
+
+  Future<void> _ensureParentDirectoriesExist(String remoteFilePath) async {
+    final parts = remoteFilePath.split('/');
+    if (parts.length <= 1) return;
+
+    String currentPath = '';
+    for (int i = 0; i < parts.length - 1; i++) {
+      final part = parts[i];
+      if (part.isEmpty) continue;
+      currentPath = currentPath.isEmpty ? part : '$currentPath/$part';
+      if (!await smbService.exists(currentPath)) {
+        try {
+          await smbService.createDirectory(currentPath);
+        } catch (e) {
+          // If another process created it concurrently, verify it exists
+          if (!await smbService.exists(currentPath)) {
+            rethrow;
+          }
+        }
+      }
+    }
   }
 }
 
