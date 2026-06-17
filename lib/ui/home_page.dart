@@ -56,25 +56,28 @@ class _HomePageState extends State<HomePage> {
                 Text(
                   'TrueTransfer',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ],
             ),
             actions: [
               Container(
                 margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: _controller.isConnected 
-                      ? Colors.green[950]?.withOpacity(0.4) 
+                  color: _controller.isConnected
+                      ? Colors.green[950]?.withOpacity(0.4)
                       : Colors.red[950]?.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: _controller.isConnected 
-                        ? Colors.green[800]! 
+                    color: _controller.isConnected
+                        ? Colors.green[800]!
                         : Colors.red[800]!,
                     width: 1,
                   ),
@@ -86,7 +89,9 @@ class _HomePageState extends State<HomePage> {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: _controller.isConnected ? Colors.green : Colors.redAccent,
+                        color: _controller.isConnected
+                            ? Colors.green
+                            : Colors.redAccent,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -96,7 +101,9 @@ class _HomePageState extends State<HomePage> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: _controller.isConnected ? Colors.green[100] : Colors.red[100],
+                        color: _controller.isConnected
+                            ? Colors.green[100]
+                            : Colors.red[100],
                       ),
                     ),
                   ],
@@ -105,23 +112,27 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           body: SafeArea(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: screens,
-            ),
+            child: IndexedStack(index: _currentIndex, children: screens),
           ),
           bottomNavigationBar: NavigationBarTheme(
             data: NavigationBarThemeData(
               indicatorColor: Colors.blueAccent.withOpacity(0.15),
               labelTextStyle: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 12);
+                  return const TextStyle(
+                    color: Colors.blueAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  );
                 }
                 return TextStyle(color: Colors.grey[500], fontSize: 12);
               }),
               iconTheme: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
-                  return const IconThemeData(color: Colors.blueAccent, size: 26);
+                  return const IconThemeData(
+                    color: Colors.blueAccent,
+                    size: 26,
+                  );
                 }
                 return IconThemeData(color: Colors.grey[500], size: 24);
               }),
@@ -134,7 +145,9 @@ class _HomePageState extends State<HomePage> {
                 if (_controller.isTransferring && index != 2) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Transfer in progress. Please check the backup status tab.'),
+                      content: Text(
+                        'Transfer in progress. Please check the backup status tab.',
+                      ),
                       backgroundColor: Colors.blueAccent,
                       duration: Duration(seconds: 2),
                     ),

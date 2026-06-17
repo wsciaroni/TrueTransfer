@@ -18,6 +18,7 @@ void main() {
         remoteHash: 'sha-dst',
         errorMessage: 'Some error',
         resumeOffset: 256,
+        remoteDirectory: 'backups/2026',
       );
 
       final json = item.toJson();
@@ -33,6 +34,7 @@ void main() {
       expect(decoded.remoteHash, item.remoteHash);
       expect(decoded.errorMessage, item.errorMessage);
       expect(decoded.resumeOffset, item.resumeOffset);
+      expect(decoded.remoteDirectory, item.remoteDirectory);
     });
   });
 

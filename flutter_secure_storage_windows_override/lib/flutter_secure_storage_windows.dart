@@ -152,7 +152,8 @@ class DpapiJsonFileMapStorage {
         }
       });
     } catch (e) {
-      debugPrint('Failed to decrypt data: $e. Deleting corrupt file: ${file.path}');
+      debugPrint(
+          'Failed to decrypt data: $e. Deleting corrupt file: ${file.path}');
       if (await file.exists()) {
         await file.delete();
       }
@@ -163,7 +164,8 @@ class DpapiJsonFileMapStorage {
     try {
       decoded = jsonDecode(plainText);
     } catch (e) {
-      debugPrint('Failed to parse JSON: $e. Deleting corrupt file: ${file.path}');
+      debugPrint(
+          'Failed to parse JSON: $e. Deleting corrupt file: ${file.path}');
       if (await file.exists()) {
         await file.delete();
       }
@@ -171,7 +173,8 @@ class DpapiJsonFileMapStorage {
     }
 
     if (decoded is! Map) {
-      debugPrint('Failed to parse JSON: Not an object. Deleting corrupt file: ${file.path}');
+      debugPrint(
+          'Failed to parse JSON: Not an object. Deleting corrupt file: ${file.path}');
       if (await file.exists()) {
         await file.delete();
       }

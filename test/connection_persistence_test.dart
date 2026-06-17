@@ -55,11 +55,8 @@ void main() {
     });
 
     test('fromJson handles null optional fields', () {
-      final json = {
-        'host': '10.0.0.5',
-        'share': 'public',
-      };
-      
+      final json = {'host': '10.0.0.5', 'share': 'public'};
+
       final decoded = SmbConnectionInfo.fromJson(json);
       expect(decoded.host, '10.0.0.5');
       expect(decoded.share, 'public');
@@ -75,7 +72,9 @@ void main() {
     late StorageManager storageManager;
 
     setUp(() {
-      tempDir = Directory.systemTemp.createTempSync('truetransfer_test_storage');
+      tempDir = Directory.systemTemp.createTempSync(
+        'truetransfer_test_storage',
+      );
       fakeSecureStorage = FakeSecureStorage();
       storageManager = StorageManager(
         baseDirectory: tempDir,
@@ -95,9 +94,11 @@ void main() {
       );
 
       await storageManager.saveConnectionInfo(info);
-      
+
       // Verify stored key in fake secure storage
-      final storedVal = await fakeSecureStorage.read(key: 'smb_connection_info');
+      final storedVal = await fakeSecureStorage.read(
+        key: 'smb_connection_info',
+      );
       expect(storedVal, isNotNull);
 
       final loadedInfo = await storageManager.loadConnectionInfo();
@@ -114,10 +115,7 @@ void main() {
     });
 
     test('should clear connection info successfully', () async {
-      final info = SmbConnectionInfo(
-        host: '192.168.1.10',
-        share: 'media',
-      );
+      final info = SmbConnectionInfo(host: '192.168.1.10', share: 'media');
 
       await storageManager.saveConnectionInfo(info);
       await storageManager.clearConnectionInfo();
@@ -135,14 +133,16 @@ void main() {
     late TransferController controller;
 
     setUp(() {
-      tempDir = Directory.systemTemp.createTempSync('truetransfer_test_controller');
+      tempDir = Directory.systemTemp.createTempSync(
+        'truetransfer_test_controller',
+      );
       fakeSecureStorage = FakeSecureStorage();
       storageManager = StorageManager(
         baseDirectory: tempDir,
         secureStorage: fakeSecureStorage,
       );
       fakeSmbService = FakeSmbService();
-      
+
       controller = TransferController();
       controller.storageManager = storageManager;
       controller.smbPoolManager = fakeSmbService;

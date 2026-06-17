@@ -104,7 +104,11 @@ class SmbPoolManager implements SmbService {
   }
 
   @override
-  Future<void> writeFileRange(String path, Uint8List data, {int offset = 0}) async {
+  Future<void> writeFileRange(
+    String path,
+    Uint8List data, {
+    int offset = 0,
+  }) async {
     _ensureConnected();
     try {
       await _pool!.writeFileRange(path, data, offset: offset);
@@ -114,7 +118,11 @@ class SmbPoolManager implements SmbService {
   }
 
   @override
-  Future<Uint8List> readFileRange(String path, {int offset = 0, required int length}) async {
+  Future<Uint8List> readFileRange(
+    String path, {
+    int offset = 0,
+    required int length,
+  }) async {
     _ensureConnected();
     try {
       return await _pool!.readFileRange(path, offset: offset, length: length);
@@ -143,10 +151,12 @@ class SmbPoolManager implements SmbService {
         Smb2ErrorType.diskFull => SmbErrorType.diskFull,
         _ => SmbErrorType.unknown,
       };
-      
+
       var mappedType = type;
-      if (e.type == Smb2ErrorType.accessDenied && 
-          (e.message.toLowerCase().contains('lock') || e.message.toLowerCase().contains('sharing violation') || e.message.toLowerCase().contains('locked'))) {
+      if (e.type == Smb2ErrorType.accessDenied &&
+          (e.message.toLowerCase().contains('lock') ||
+              e.message.toLowerCase().contains('sharing violation') ||
+              e.message.toLowerCase().contains('locked'))) {
         mappedType = SmbErrorType.fileLocked;
       }
 

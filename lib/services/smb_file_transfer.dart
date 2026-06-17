@@ -17,13 +17,14 @@ class SmbFileTransfer {
     required bool Function() checkCancelled,
     required bool Function() checkPaused,
     int resumeOffset = 0,
+    bool deleteSource = true,
   }) async {
     final localFile = File(localPath);
     if (!await localFile.exists()) {
       throw Exception('Source file does not exist: $localPath');
     }
     final totalBytes = await localFile.length();
-    
+
     // Ensure intermediate directories exist
     await _ensureParentDirectoriesExist(remotePath);
 
@@ -53,9 +54,15 @@ class SmbFileTransfer {
           throw Exception('Transfer paused.');
         }
 
-        final uint8Chunk = chunk is Uint8List ? chunk : Uint8List.fromList(chunk);
-        
-        await smbService.writeFileRange(tempPath, uint8Chunk, offset: currentOffset);
+        final uint8Chunk = chunk is Uint8List
+            ? chunk
+            : Uint8List.fromList(chunk);
+
+        await smbService.writeFileRange(
+          tempPath,
+          uint8Chunk,
+          offset: currentOffset,
+        );
         currentOffset += uint8Chunk.length;
         onProgress(currentOffset, totalBytes);
       }
@@ -86,7 +93,9 @@ class SmbFileTransfer {
     await smbService.rename(tempPath, remotePath);
 
     // 5. Transactional Deletion
-    await localFile.delete();
+    if (deleteSource) {
+      await localFile.delete();
+    }
   }
 
   Future<String> _calculateLocalHash(File file) async {
@@ -107,7 +116,11 @@ class SmbFileTransfer {
     int offset = 0;
     while (offset < size) {
       final toRead = (size - offset) < chunkSize ? (size - offset) : chunkSize;
-      final chunk = await smbService.readFileRange(path, offset: offset, length: toRead);
+      final chunk = await smbService.readFileRange(
+        path,
+        offset: offset,
+        length: toRead,
+      );
       output.add(chunk);
       offset += chunk.length;
     }

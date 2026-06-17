@@ -7,7 +7,8 @@ class TransferQueue {
 
   int get totalBytes => items.fold(0, (sum, item) => sum + item.fileSize);
 
-  int get transferredBytes => items.fold(0, (sum, item) => sum + item.transferredBytes);
+  int get transferredBytes =>
+      items.fold(0, (sum, item) => sum + item.transferredBytes);
 
   double get overallProgress {
     final total = totalBytes;
@@ -28,15 +29,15 @@ class TransferQueue {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'items': items.map((item) => item.toJson()).toList(),
-    };
+    return {'items': items.map((item) => item.toJson()).toList()};
   }
 
   factory TransferQueue.fromJson(Map<String, dynamic> json) {
     final list = json['items'] as List<dynamic>? ?? [];
     return TransferQueue(
-      items: list.map((e) => TransferItem.fromJson(e as Map<String, dynamic>)).toList(),
+      items: list
+          .map((e) => TransferItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

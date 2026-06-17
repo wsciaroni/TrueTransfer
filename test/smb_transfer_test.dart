@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:truetransfer/services/smb_service.dart';
 import 'package:truetransfer/services/smb_file_transfer.dart';
@@ -8,10 +7,10 @@ import 'package:truetransfer/services/smb_file_transfer.dart';
 class FakeSmbService implements SmbService {
   @override
   bool isConnected = false;
-  
+
   final Map<String, Uint8List> files = {};
   final Set<String> directories = {};
-  
+
   bool failOperations = false;
   int operationFailureCount = 0;
   bool corruptOnRead = false;
@@ -60,16 +59,22 @@ class FakeSmbService implements SmbService {
   @override
   Future<void> rename(String oldPath, String newPath) async {
     _maybeFail();
-    if (!files.containsKey(oldPath)) throw Exception('File not found: $oldPath');
+    if (!files.containsKey(oldPath)) {
+      throw Exception('File not found: $oldPath');
+    }
     files[newPath] = files.remove(oldPath)!;
   }
 
   @override
-  Future<void> writeFileRange(String path, Uint8List data, {int offset = 0}) async {
+  Future<void> writeFileRange(
+    String path,
+    Uint8List data, {
+    int offset = 0,
+  }) async {
     _maybeFail();
     final currentData = files[path] ?? Uint8List(0);
-    final newLength = offset + data.length > currentData.length 
-        ? offset + data.length 
+    final newLength = offset + data.length > currentData.length
+        ? offset + data.length
         : currentData.length;
     final updatedData = Uint8List(newLength);
     updatedData.setRange(0, currentData.length, currentData);
@@ -78,7 +83,11 @@ class FakeSmbService implements SmbService {
   }
 
   @override
-  Future<Uint8List> readFileRange(String path, {int offset = 0, required int length}) async {
+  Future<Uint8List> readFileRange(
+    String path, {
+    int offset = 0,
+    required int length,
+  }) async {
     _maybeFail();
     if (!files.containsKey(path)) throw Exception('File not found: $path');
     if (corruptOnRead) {
@@ -86,8 +95,8 @@ class FakeSmbService implements SmbService {
       return Uint8List.fromList(List.filled(length, 0xFF));
     }
     final fileData = files[path]!;
-    final actualLength = offset + length > fileData.length 
-        ? fileData.length - offset 
+    final actualLength = offset + length > fileData.length
+        ? fileData.length - offset
         : length;
     if (actualLength <= 0) return Uint8List(0);
     return Uint8List.sublistView(fileData, offset, offset + actualLength);
@@ -107,7 +116,8 @@ void main() {
   late FakeSmbService fakeSmbService;
   late SmbFileTransfer fileTransfer;
 
-  final String fileContent = 'Hello, this is a test string to verify file integrity over SMB!';
+  final String fileContent =
+      'Hello, this is a test string to verify file integrity over SMB!';
   final Uint8List fileBytes = Uint8List.fromList(fileContent.codeUnits);
 
   setUp(() {
@@ -138,12 +148,40 @@ void main() {
       // Verify the final file exists on the remote
       expect(fakeSmbService.files.containsKey('backup/test_file.txt'), isTrue);
       // Verify its content matches
-      expect(String.fromCharCodes(fakeSmbService.files['backup/test_file.txt']!), fileContent);
+      expect(
+        String.fromCharCodes(fakeSmbService.files['backup/test_file.txt']!),
+        fileContent,
+      );
       // Verify the temporary .part file is gone
-      expect(fakeSmbService.files.containsKey('backup/test_file.txt.part'), isFalse);
+      expect(
+        fakeSmbService.files.containsKey('backup/test_file.txt.part'),
+        isFalse,
+      );
       // Verify local source file is deleted (transaction completed)
       expect(localFile.existsSync(), isFalse);
     });
+
+    test(
+      'Successful transfer with deleteSource: false preserves local source file',
+      () async {
+        await fileTransfer.transferFile(
+          localPath: localFile.path,
+          remotePath: 'backup/test_file.txt',
+          onProgress: (transferred, total) {},
+          checkCancelled: () => false,
+          checkPaused: () => false,
+          deleteSource: false,
+        );
+
+        // Verify the final file exists on the remote
+        expect(
+          fakeSmbService.files.containsKey('backup/test_file.txt'),
+          isTrue,
+        );
+        // Verify local source file is NOT deleted
+        expect(localFile.existsSync(), isTrue);
+      },
+    );
 
     test('Nested directory creation during transfer', () async {
       await fileTransfer.transferFile(
@@ -159,56 +197,86 @@ void main() {
       expect(fakeSmbService.directories.contains('folder1/folder2'), isTrue);
 
       // Verify the final file exists
-      expect(fakeSmbService.files.containsKey('folder1/folder2/nested_file.txt'), isTrue);
+      expect(
+        fakeSmbService.files.containsKey('folder1/folder2/nested_file.txt'),
+        isTrue,
+      );
       expect(localFile.existsSync(), isFalse);
     });
 
-    test('Failed transfer due to hash mismatch preserves local file and cleans remote', () async {
-      fakeSmbService.corruptOnRead = true;
+    test(
+      'Failed transfer due to hash mismatch preserves local file and cleans remote',
+      () async {
+        fakeSmbService.corruptOnRead = true;
 
-      expect(
-        () => fileTransfer.transferFile(
-          localPath: localFile.path,
-          remotePath: 'backup/test_file.txt',
-          onProgress: (transferred, total) {},
-          checkCancelled: () => false,
-          checkPaused: () => false,
-        ),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Hash mismatch'))),
-      );
+        expect(
+          () => fileTransfer.transferFile(
+            localPath: localFile.path,
+            remotePath: 'backup/test_file.txt',
+            onProgress: (transferred, total) {},
+            checkCancelled: () => false,
+            checkPaused: () => false,
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Hash mismatch'),
+            ),
+          ),
+        );
 
-      // Verify remote destination does not exist
-      expect(fakeSmbService.files.containsKey('backup/test_file.txt'), isFalse);
-      // Verify remote temporary file was cleaned up
-      expect(fakeSmbService.files.containsKey('backup/test_file.txt.part'), isFalse);
-      // Verify local file is NOT deleted
-      expect(localFile.existsSync(), isTrue);
-    });
+        // Verify remote destination does not exist
+        expect(
+          fakeSmbService.files.containsKey('backup/test_file.txt'),
+          isFalse,
+        );
+        // Verify remote temporary file was cleaned up
+        expect(
+          fakeSmbService.files.containsKey('backup/test_file.txt.part'),
+          isFalse,
+        );
+        // Verify local file is NOT deleted
+        expect(localFile.existsSync(), isTrue);
+      },
+    );
 
-    test('Cancelled transfer keeps .part file and local file for resuming', () async {
-      final largeFile = File('${tempDir.path}/large_test_file.txt');
-      largeFile.writeAsBytesSync(Uint8List(128 * 1024));
+    test(
+      'Cancelled transfer keeps .part file and local file for resuming',
+      () async {
+        final largeFile = File('${tempDir.path}/large_test_file.txt');
+        largeFile.writeAsBytesSync(Uint8List(128 * 1024));
 
-      int chunkCount = 0;
-      await expectLater(
-        fileTransfer.transferFile(
-          localPath: largeFile.path,
-          remotePath: 'backup/large_test_file.txt',
-          onProgress: (transferred, total) {},
-          checkCancelled: () {
-            chunkCount++;
-            return chunkCount > 1; // Cancel after first chunk is read/written
-          },
-          checkPaused: () => false,
-        ),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message', contains('Transfer cancelled'))),
-      );
+        int chunkCount = 0;
+        await expectLater(
+          fileTransfer.transferFile(
+            localPath: largeFile.path,
+            remotePath: 'backup/large_test_file.txt',
+            onProgress: (transferred, total) {},
+            checkCancelled: () {
+              chunkCount++;
+              return chunkCount > 1; // Cancel after first chunk is read/written
+            },
+            checkPaused: () => false,
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Transfer cancelled'),
+            ),
+          ),
+        );
 
-      // Verify remote temporary file still exists
-      expect(fakeSmbService.files.containsKey('backup/large_test_file.txt.part'), isTrue);
-      // Verify local file is NOT deleted
-      expect(largeFile.existsSync(), isTrue);
-    });
+        // Verify remote temporary file still exists
+        expect(
+          fakeSmbService.files.containsKey('backup/large_test_file.txt.part'),
+          isTrue,
+        );
+        // Verify local file is NOT deleted
+        expect(largeFile.existsSync(), isTrue);
+      },
+    );
 
     test('Resume transfer from offset', () async {
       // 1. Simulate a partial write of 20 bytes on the remote share
@@ -227,7 +295,10 @@ void main() {
 
       // Verify transaction succeeded
       expect(fakeSmbService.files.containsKey('backup/test_file.txt'), isTrue);
-      expect(String.fromCharCodes(fakeSmbService.files['backup/test_file.txt']!), fileContent);
+      expect(
+        String.fromCharCodes(fakeSmbService.files['backup/test_file.txt']!),
+        fileContent,
+      );
       expect(localFile.existsSync(), isFalse);
     });
   });

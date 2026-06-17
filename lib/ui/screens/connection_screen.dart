@@ -26,7 +26,9 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     _hostController = TextEditingController(text: _controller.host ?? '');
     _shareController = TextEditingController(text: _controller.share ?? '');
     _userController = TextEditingController(text: _controller.username ?? '');
-    _passwordController = TextEditingController(text: _controller.password ?? '');
+    _passwordController = TextEditingController(
+      text: _controller.password ?? '',
+    );
     _domainController = TextEditingController(text: _controller.domain ?? '');
 
     if (_controller.host != null && _controller.host!.isNotEmpty) {
@@ -48,10 +50,13 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   void _onControllerChanged() {
-    if (!_hasLoadedCredentials && !_controller.isConnected && !_controller.isConnecting) {
+    if (!_hasLoadedCredentials &&
+        !_controller.isConnected &&
+        !_controller.isConnecting) {
       final hostVal = _controller.host;
       final shareVal = _controller.share;
-      if ((hostVal != null && hostVal.isNotEmpty) || (shareVal != null && shareVal.isNotEmpty)) {
+      if ((hostVal != null && hostVal.isNotEmpty) ||
+          (shareVal != null && shareVal.isNotEmpty)) {
         if (_hostController.text.isEmpty && _shareController.text.isEmpty) {
           _hostController.text = hostVal ?? '';
           _shareController.text = shareVal ?? '';
@@ -70,8 +75,12 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         host: _hostController.text.trim(),
         share: _shareController.text.trim(),
         user: _userController.text.isEmpty ? null : _userController.text.trim(),
-        password: _passwordController.text.isEmpty ? null : _passwordController.text,
-        domain: _domainController.text.isEmpty ? null : _domainController.text.trim(),
+        password: _passwordController.text.isEmpty
+            ? null
+            : _passwordController.text,
+        domain: _domainController.text.isEmpty
+            ? null
+            : _domainController.text.trim(),
       );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -130,16 +139,16 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         Text(
           'SMB Connection',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           'Configure connection details for your target network storage.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[400],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[400]),
         ),
       ],
     );
@@ -166,7 +175,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       cardColor = const Color(0xFF0F2E1E);
       accentColor = Colors.green;
       statusTitle = 'Connected';
-      statusDesc = 'Active session established with ${_controller.host}/${_controller.share}';
+      statusDesc =
+          'Active session established with ${_controller.host}/${_controller.share}';
       icon = Icons.cloud_done_rounded;
     } else if (error != null) {
       cardColor = const Color(0xFF2C1616);
@@ -187,7 +197,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
             color: accentColor.withOpacity(0.05),
             blurRadius: 12,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Row(
@@ -198,11 +208,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
               color: accentColor.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              color: accentColor,
-              size: 32,
-            ),
+            child: Icon(icon, color: accentColor, size: 32),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -220,10 +226,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                 const SizedBox(height: 4),
                 Text(
                   statusDesc,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[300],
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey[300]),
                 ),
               ],
             ),
@@ -235,7 +238,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 
   Widget _buildFormFields() {
     final bool disabled = _controller.isConnecting || _controller.isConnected;
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -262,7 +265,10 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
             controller: _shareController,
             enabled: !disabled,
             style: const TextStyle(color: Colors.white),
-            decoration: _inputDecoration('Share Name', Icons.folder_shared_rounded),
+            decoration: _inputDecoration(
+              'Share Name',
+              Icons.folder_shared_rounded,
+            ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
                 return 'Share name is required';
@@ -275,7 +281,10 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
             controller: _userController,
             enabled: !disabled,
             style: const TextStyle(color: Colors.white),
-            decoration: _inputDecoration('Username (Optional)', Icons.person_rounded),
+            decoration: _inputDecoration(
+              'Username (Optional)',
+              Icons.person_rounded,
+            ),
           ),
           const SizedBox(height: 16),
           TextFormField(
@@ -283,14 +292,20 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
             enabled: !disabled,
             obscureText: true,
             style: const TextStyle(color: Colors.white),
-            decoration: _inputDecoration('Password (Optional)', Icons.lock_rounded),
+            decoration: _inputDecoration(
+              'Password (Optional)',
+              Icons.lock_rounded,
+            ),
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _domainController,
             enabled: !disabled,
             style: const TextStyle(color: Colors.white),
-            decoration: _inputDecoration('Domain (Optional)', Icons.domain_rounded),
+            decoration: _inputDecoration(
+              'Domain (Optional)',
+              Icons.domain_rounded,
+            ),
           ),
         ],
       ),
@@ -358,9 +373,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         disabledBackgroundColor: Colors.grey[800],
         disabledForegroundColor: Colors.grey[600],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

@@ -9,14 +9,13 @@ import 'secure_storage.dart';
 class StorageManager {
   static const String _fileName = 'transfer_queue.json';
   static const String _connectionKey = 'smb_connection_info';
-  
+  static const String _settingsKey = 'transfer_settings';
+
   final Directory? baseDirectory;
   final SecureStorage secureStorage;
 
-  StorageManager({
-    this.baseDirectory,
-    SecureStorage? secureStorage,
-  }) : secureStorage = secureStorage ?? SecureStorageImpl();
+  StorageManager({this.baseDirectory, SecureStorage? secureStorage})
+    : secureStorage = secureStorage ?? SecureStorageImpl();
 
   Future<File> get _localFile async {
     final directory = baseDirectory ?? await getApplicationDocumentsDirectory();
@@ -87,6 +86,35 @@ class StorageManager {
       await secureStorage.delete(key: _connectionKey);
     } catch (e) {
       print('Error clearing connection info: $e');
+    }
+  }
+
+  Future<void> saveSettings(Map<String, dynamic> settings) async {
+    try {
+      final jsonString = jsonEncode(settings);
+      await secureStorage.write(key: _settingsKey, value: jsonString);
+    } catch (e) {
+      print('Error saving transfer settings: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>?> loadSettings() async {
+    try {
+      final jsonString = await secureStorage.read(key: _settingsKey);
+      if (jsonString != null) {
+        return jsonDecode(jsonString) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      print('Error loading transfer settings: $e');
+    }
+    return null;
+  }
+
+  Future<void> clearSettings() async {
+    try {
+      await secureStorage.delete(key: _settingsKey);
+    } catch (e) {
+      print('Error clearing transfer settings: $e');
     }
   }
 }

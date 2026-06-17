@@ -52,8 +52,11 @@ class _TransferScreenState extends State<TransferScreen> {
 
         // Find currently transferring item
         final activeItem = _controller.queue.items.firstWhere(
-          (item) => item.status == TransferStatus.transferring || item.status == TransferStatus.verifying,
-          orElse: () => TransferItem(id: '', sourcePath: '', remotePath: '', fileSize: 0),
+          (item) =>
+              item.status == TransferStatus.transferring ||
+              item.status == TransferStatus.verifying,
+          orElse: () =>
+              TransferItem(id: '', sourcePath: '', remotePath: '', fileSize: 0),
         );
 
         return SingleChildScrollView(
@@ -73,12 +76,136 @@ class _TransferScreenState extends State<TransferScreen> {
                 const SizedBox(height: 24),
               ],
               _buildStatsGrid(),
+              const SizedBox(height: 24),
+              _buildSettingsCard(),
               const SizedBox(height: 32),
               _buildControls(hasItems, isConnected, isTransferring, isPaused),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSettingsCard() {
+    final bool disabled = _controller.isTransferring;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[850]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.settings_suggest_rounded,
+                color: Colors.blueAccent,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Transfer Settings',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Delete source files after backup',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Purge source files immediately upon successful SHA-256 validation.',
+                      style: TextStyle(fontSize: 11, color: Colors.grey[450]),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: _controller.deleteSource,
+                onChanged: disabled
+                    ? null
+                    : (val) {
+                        _controller.deleteSource = val;
+                      },
+                activeColor: Colors.blueAccent,
+              ),
+            ],
+          ),
+          const Divider(height: 32, color: Colors.black38),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Parallel transfers',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    '${_controller.parallelism} files concurrent',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.cyan,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Set the number of concurrent file streams to transfer to the remote share.',
+                style: TextStyle(fontSize: 11, color: Colors.grey[450]),
+              ),
+              const SizedBox(height: 12),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: Colors.blueAccent,
+                  inactiveTrackColor: Colors.black45,
+                  thumbColor: Colors.blueAccent,
+                  overlayColor: Colors.blueAccent.withOpacity(0.2),
+                ),
+                child: Slider(
+                  value: _controller.parallelism.toDouble(),
+                  min: 1.0,
+                  max: 8.0,
+                  divisions: 7,
+                  onChanged: disabled
+                      ? null
+                      : (val) {
+                          _controller.parallelism = val.round();
+                        },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -89,16 +216,16 @@ class _TransferScreenState extends State<TransferScreen> {
         Text(
           'Backup Control',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           'Perform safe transfers with SHA-256 validation.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[400],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[400]),
         ),
       ],
     );
@@ -170,7 +297,7 @@ class _TransferScreenState extends State<TransferScreen> {
   Widget _buildOverallProgressCard() {
     final progress = _controller.queue.overallProgress;
     final progressPercent = (progress * 100).toStringAsFixed(1);
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -215,10 +342,7 @@ class _TransferScreenState extends State<TransferScreen> {
           const SizedBox(height: 12),
           Text(
             '${_formatBytes(_controller.queue.transferredBytes)} of ${_formatBytes(_controller.queue.totalBytes)} transferred',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[450],
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey[450]),
           ),
         ],
       ),
@@ -227,8 +351,10 @@ class _TransferScreenState extends State<TransferScreen> {
 
   Widget _buildActiveItemCard(TransferItem item) {
     final name = p.basename(item.sourcePath);
-    final statusString = item.status == TransferStatus.verifying ? 'Verifying integrity (SHA-256)...' : 'Transferring file...';
-    
+    final statusString = item.status == TransferStatus.verifying
+        ? 'Verifying integrity (SHA-256)...'
+        : 'Transferring file...';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -242,7 +368,9 @@ class _TransferScreenState extends State<TransferScreen> {
           Row(
             children: [
               Icon(
-                item.status == TransferStatus.verifying ? Icons.check_circle_outline_rounded : Icons.sync_rounded,
+                item.status == TransferStatus.verifying
+                    ? Icons.check_circle_outline_rounded
+                    : Icons.sync_rounded,
                 color: Colors.blueAccent,
               ),
               const SizedBox(width: 12),
@@ -287,7 +415,7 @@ class _TransferScreenState extends State<TransferScreen> {
                 style: TextStyle(fontSize: 11, color: Colors.grey[500]),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -295,7 +423,8 @@ class _TransferScreenState extends State<TransferScreen> {
 
   Widget _buildStatsGrid() {
     // Estimations
-    final remainingBytes = _controller.queue.totalBytes - _controller.queue.transferredBytes;
+    final remainingBytes =
+        _controller.queue.totalBytes - _controller.queue.transferredBytes;
     final double speedMBps = _controller.speedMBps;
     final int etaSecs = (speedMBps > 0 && remainingBytes > 0)
         ? (remainingBytes / (speedMBps * 1024 * 1024)).round()
@@ -337,7 +466,12 @@ class _TransferScreenState extends State<TransferScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -355,10 +489,7 @@ class _TransferScreenState extends State<TransferScreen> {
               const SizedBox(width: 8),
               Text(
                 title,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),
             ],
           ),
@@ -376,7 +507,12 @@ class _TransferScreenState extends State<TransferScreen> {
     );
   }
 
-  Widget _buildControls(bool hasItems, bool isConnected, bool isTransferring, bool isPaused) {
+  Widget _buildControls(
+    bool hasItems,
+    bool isConnected,
+    bool isTransferring,
+    bool isPaused,
+  ) {
     if (!hasItems) {
       return Center(
         child: Text(
@@ -411,7 +547,9 @@ class _TransferScreenState extends State<TransferScreen> {
             onPressed: isPaused
                 ? () => _controller.resumeTransfer()
                 : () => _controller.pauseTransfer(),
-            icon: Icon(isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded),
+            icon: Icon(
+              isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+            ),
             label: Text(isPaused ? 'Resume' : 'Pause'),
             style: ElevatedButton.styleFrom(
               backgroundColor: isPaused ? Colors.green[800] : Colors.grey[900],
@@ -419,7 +557,9 @@ class _TransferScreenState extends State<TransferScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: isPaused ? BorderSide.none : BorderSide(color: Colors.grey[800]!),
+                side: isPaused
+                    ? BorderSide.none
+                    : BorderSide(color: Colors.grey[800]!),
               ),
             ),
           ),

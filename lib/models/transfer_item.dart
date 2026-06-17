@@ -12,7 +12,8 @@ class TransferItem {
   final String sourcePath;
   final String remotePath;
   final int fileSize;
-  
+  final String remoteDirectory;
+
   TransferStatus status;
   int transferredBytes;
   String? sourceHash;
@@ -25,6 +26,7 @@ class TransferItem {
     required this.sourcePath,
     required this.remotePath,
     required this.fileSize,
+    this.remoteDirectory = '',
     this.status = TransferStatus.pending,
     this.transferredBytes = 0,
     this.sourceHash,
@@ -44,6 +46,7 @@ class TransferItem {
       'sourcePath': sourcePath,
       'remotePath': remotePath,
       'fileSize': fileSize,
+      'remoteDirectory': remoteDirectory,
       'status': status.name,
       'transferredBytes': transferredBytes,
       'sourceHash': sourceHash,
@@ -59,6 +62,7 @@ class TransferItem {
       sourcePath: json['sourcePath'] as String,
       remotePath: json['remotePath'] as String,
       fileSize: json['fileSize'] as int,
+      remoteDirectory: (json['remoteDirectory'] ?? '') as String,
       status: TransferStatus.values.byName(json['status'] as String),
       transferredBytes: json['transferredBytes'] as int,
       sourceHash: json['sourceHash'] as String?,
@@ -73,6 +77,7 @@ class TransferItem {
     String? sourcePath,
     String? remotePath,
     int? fileSize,
+    String? remoteDirectory,
     TransferStatus? status,
     int? transferredBytes,
     String? sourceHash,
@@ -85,6 +90,7 @@ class TransferItem {
       sourcePath: sourcePath ?? this.sourcePath,
       remotePath: remotePath ?? this.remotePath,
       fileSize: fileSize ?? this.fileSize,
+      remoteDirectory: remoteDirectory ?? this.remoteDirectory,
       status: status ?? this.status,
       transferredBytes: transferredBytes ?? this.transferredBytes,
       sourceHash: sourceHash ?? this.sourceHash,

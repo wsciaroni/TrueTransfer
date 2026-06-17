@@ -26,7 +26,7 @@ class TransferController extends ChangeNotifier {
   set smbPoolManager(SmbService manager) => _smbPoolManager = manager;
 
   TransferQueue queue = TransferQueue(items: []);
-  
+
   // SMB Credentials & Info
   String? host;
   String? share;
@@ -45,7 +45,31 @@ class TransferController extends ChangeNotifier {
   int _totalBytesMoved = 0;
   int _totalStorageReclaimed = 0;
 
-  // Getters
+  bool _deleteSource = true;
+  int _parallelism = 1;
+
+  // Getters & Setters
+  bool get deleteSource => _deleteSource;
+  set deleteSource(bool val) {
+    _deleteSource = val;
+    _saveSettings();
+    notifyListeners();
+  }
+
+  int get parallelism => _parallelism;
+  set parallelism(int val) {
+    _parallelism = val;
+    _saveSettings();
+    notifyListeners();
+  }
+
+  Future<void> _saveSettings() async {
+    await _storageManager.saveSettings({
+      'deleteSource': _deleteSource,
+      'parallelism': _parallelism,
+    });
+  }
+
   bool get isConnected => _smbPoolManager.isConnected;
   bool get isConnecting => _isConnecting;
   String? get connectionError => _connectionError;
@@ -74,6 +98,13 @@ class TransferController extends ChangeNotifier {
       username = savedInfo.username;
       password = savedInfo.password;
       domain = savedInfo.domain;
+    }
+
+    // Load saved settings
+    final savedSettings = await _storageManager.loadSettings();
+    if (savedSettings != null) {
+      _deleteSource = savedSettings['deleteSource'] as bool? ?? true;
+      _parallelism = savedSettings['parallelism'] as int? ?? 1;
     }
 
     notifyListeners();
@@ -137,7 +168,7 @@ class TransferController extends ChangeNotifier {
       if (await file.exists()) {
         final size = await file.length();
         final name = p.basename(path);
-        
+
         final item = TransferItem(
           id: '${DateTime.now().microsecondsSinceEpoch}_${path.hashCode}',
           sourcePath: path,
@@ -185,6 +216,27 @@ class TransferController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateItemDestination(String id, String remoteDirectory) async {
+    final index = queue.items.indexWhere((item) => item.id == id);
+    if (index != -1) {
+      queue.items[index] = queue.items[index].copyWith(
+        remoteDirectory: remoteDirectory,
+      );
+      await _storageManager.saveQueue(queue);
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateAllDestinations(String remoteDirectory) async {
+    for (int i = 0; i < queue.items.length; i++) {
+      queue.items[i] = queue.items[i].copyWith(
+        remoteDirectory: remoteDirectory,
+      );
+    }
+    await _storageManager.saveQueue(queue);
+    notifyListeners();
+  }
+
   Future<void> clearQueue() async {
     queue.clear();
     _totalBytesMoved = 0;
@@ -225,16 +277,37 @@ class TransferController extends ChangeNotifier {
     _isCancelled = false;
     notifyListeners();
 
+    final activeWorkers = <Future<void>>[];
+    for (int i = 0; i < parallelism; i++) {
+      activeWorkers.add(_runWorker());
+    }
+
+    await Future.wait(activeWorkers);
+
+    final anyActiveOrPending = queue.items.any(
+      (item) =>
+          item.status == TransferStatus.pending ||
+          item.status == TransferStatus.transferring ||
+          item.status == TransferStatus.verifying,
+    );
+
+    if (!_isPaused && !_isCancelled && !anyActiveOrPending) {
+      _isTransferring = false;
+      _speedMBps = 0.0;
+    }
+    notifyListeners();
+  }
+
+  Future<void> _runWorker() async {
     while (_isTransferring && !_isPaused && !_isCancelled) {
       final nextItemIndex = queue.items.indexWhere(
-        (item) => item.status == TransferStatus.pending || 
-                  item.status == TransferStatus.failed || 
-                  item.status == TransferStatus.paused
+        (item) =>
+            item.status == TransferStatus.pending ||
+            item.status == TransferStatus.failed ||
+            item.status == TransferStatus.paused,
       );
 
       if (nextItemIndex == -1) {
-        _isTransferring = false;
-        notifyListeners();
         break;
       }
 
@@ -247,10 +320,15 @@ class TransferController extends ChangeNotifier {
       final stopwatch = Stopwatch()..start();
 
       try {
+        final resolvedRemotePath = item.remoteDirectory.isNotEmpty
+            ? '${item.remoteDirectory}/${item.remotePath}'
+            : item.remotePath;
+
         await fileTransfer.transferFile(
           localPath: item.sourcePath,
-          remotePath: item.remotePath,
+          remotePath: resolvedRemotePath,
           resumeOffset: item.resumeOffset,
+          deleteSource: _deleteSource,
           onProgress: (transferred, total) {
             item.transferredBytes = transferred;
             item.resumeOffset = transferred;
@@ -270,7 +348,9 @@ class TransferController extends ChangeNotifier {
 
         item.status = TransferStatus.completed;
         _totalBytesMoved += item.fileSize;
-        _totalStorageReclaimed += item.fileSize;
+        if (_deleteSource) {
+          _totalStorageReclaimed += item.fileSize;
+        }
         await _storageManager.saveQueue(queue);
         notifyListeners();
       } catch (e) {
@@ -284,7 +364,9 @@ class TransferController extends ChangeNotifier {
           item.status = TransferStatus.failed;
           item.errorMessage = e.toString();
 
-          if (e is SmbException && (e.type == SmbErrorType.connectionFailed || e.type == SmbErrorType.timeout)) {
+          if (e is SmbException &&
+              (e.type == SmbErrorType.connectionFailed ||
+                  e.type == SmbErrorType.timeout)) {
             _isReconnecting = true;
             notifyListeners();
 
@@ -307,7 +389,9 @@ class TransferController extends ChangeNotifier {
 
             _isReconnecting = false;
             if (reconnected && !_isCancelled && !_isPaused) {
-              continue; // Retry transfer of current file
+              item.status = TransferStatus.pending;
+              notifyListeners();
+              continue;
             } else {
               _isTransferring = false;
             }

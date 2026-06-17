@@ -6,10 +6,7 @@ import '../../models/transfer_item.dart';
 class SummaryScreen extends StatelessWidget {
   final VoidCallback onNewTransfer;
 
-  const SummaryScreen({
-    super.key,
-    required this.onNewTransfer,
-  });
+  const SummaryScreen({super.key, required this.onNewTransfer});
 
   String _formatBytes(int bytes) {
     if (bytes <= 0) return '0 B';
@@ -27,15 +24,24 @@ class SummaryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = TransferController();
     final items = controller.queue.items;
-    final completedItems = items.where((item) => item.status == TransferStatus.completed).toList();
-    final failedItems = items.where((item) => item.status == TransferStatus.failed).toList();
+    final completedItems = items
+        .where((item) => item.status == TransferStatus.completed)
+        .toList();
+    final failedItems = items
+        .where((item) => item.status == TransferStatus.failed)
+        .toList();
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildSuccessBanner(context, completedItems.length, failedItems.length),
+          _buildSuccessBanner(
+            context,
+            completedItems.length,
+            failedItems.length,
+            controller.deleteSource,
+          ),
           const SizedBox(height: 24),
           _buildMetricsRow(controller),
           const SizedBox(height: 24),
@@ -48,9 +54,7 @@ class SummaryScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Expanded(
-            child: _buildItemsList(completedItems, failedItems),
-          ),
+          Expanded(child: _buildItemsList(completedItems, failedItems)),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
@@ -73,16 +77,23 @@ class SummaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSuccessBanner(BuildContext context, int successCount, int failCount) {
+  Widget _buildSuccessBanner(
+    BuildContext context,
+    int successCount,
+    int failCount,
+    bool deleteSource,
+  ) {
     final hasFailed = failCount > 0;
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: hasFailed ? const Color(0xFF2C1616) : const Color(0xFF0F2E1E),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: hasFailed ? Colors.redAccent.withOpacity(0.3) : Colors.green.withOpacity(0.3),
+          color: hasFailed
+              ? Colors.redAccent.withOpacity(0.3)
+              : Colors.green.withOpacity(0.3),
           width: 1.5,
         ),
       ),
@@ -91,11 +102,15 @@ class SummaryScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: (hasFailed ? Colors.redAccent : Colors.green).withOpacity(0.15),
+              color: (hasFailed ? Colors.redAccent : Colors.green).withOpacity(
+                0.15,
+              ),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              hasFailed ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+              hasFailed
+                  ? Icons.error_outline_rounded
+                  : Icons.check_circle_outline_rounded,
               color: hasFailed ? Colors.redAccent : Colors.green,
               size: 36,
             ),
@@ -106,7 +121,9 @@ class SummaryScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasFailed ? 'Backup Completed with Errors' : 'Backup Completed Successfully',
+                  hasFailed
+                      ? 'Backup Completed with Errors'
+                      : 'Backup Completed Successfully',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -117,11 +134,8 @@ class SummaryScreen extends StatelessWidget {
                 Text(
                   hasFailed
                       ? '$successCount files moved, $failCount files failed.'
-                      : 'All $successCount files transferred & verified. Source files purged.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[300],
-                  ),
+                      : 'All $successCount files transferred & verified. ${deleteSource ? "Source files purged." : "Source files preserved."}',
+                  style: TextStyle(fontSize: 13, color: Colors.grey[300]),
                 ),
               ],
             ),
@@ -155,7 +169,12 @@ class SummaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryMetric(String label, String value, IconData icon, Color color) {
+  Widget _buildSummaryMetric(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -190,7 +209,10 @@ class SummaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildItemsList(List<TransferItem> completed, List<TransferItem> failed) {
+  Widget _buildItemsList(
+    List<TransferItem> completed,
+    List<TransferItem> failed,
+  ) {
     final allItems = [...completed, ...failed];
     if (allItems.isEmpty) {
       return Center(
@@ -242,24 +264,18 @@ class SummaryScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         item.errorMessage!,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.red[350],
-                        ),
+                        style: TextStyle(fontSize: 11, color: Colors.red[350]),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ]
+                    ],
                   ],
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 _formatBytes(item.fileSize),
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.white,
-                ),
+                style: const TextStyle(fontSize: 12, color: Colors.white),
               ),
             ],
           ),

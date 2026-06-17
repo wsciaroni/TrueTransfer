@@ -8,9 +8,7 @@ abstract class SecureStorage {
 
 class SecureStorageImpl implements SecureStorage {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 
   @override

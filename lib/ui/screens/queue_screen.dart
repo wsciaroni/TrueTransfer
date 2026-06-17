@@ -39,10 +39,7 @@ class _QueueScreenState extends State<QueueScreen> {
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red[900],
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red[900]),
     );
   }
 
@@ -64,7 +61,7 @@ class _QueueScreenState extends State<QueueScreen> {
       animation: _controller,
       builder: (context, child) {
         final items = _controller.queue.items;
-        
+
         return Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
@@ -74,6 +71,10 @@ class _QueueScreenState extends State<QueueScreen> {
               const SizedBox(height: 20),
               _buildControlBar(items.isNotEmpty),
               const SizedBox(height: 20),
+              if (items.isNotEmpty) ...[
+                _buildGlobalDestinationInput(),
+                const SizedBox(height: 20),
+              ],
               Expanded(
                 child: items.isEmpty
                     ? _buildEmptyState()
@@ -83,6 +84,92 @@ class _QueueScreenState extends State<QueueScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildGlobalDestinationInput() {
+    final textController = TextEditingController(
+      text: _controller.queue.items.isNotEmpty
+          ? _controller.queue.items.first.remoteDirectory
+          : '',
+    );
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[850]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Default Remote Folder',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: textController,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Backups/Windows, Leave empty for root',
+                    hintStyle: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    prefixIcon: Icon(
+                      Icons.folder_open_rounded,
+                      color: Colors.grey[500],
+                      size: 18,
+                    ),
+                    filled: true,
+                    fillColor: Colors.black45,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey[800]!),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: () {
+                  _controller.updateAllDestinations(textController.text.trim());
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Updated remote directory for all queue items',
+                      ),
+                      backgroundColor: Colors.blueAccent,
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text('Apply All'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -96,16 +183,16 @@ class _QueueScreenState extends State<QueueScreen> {
             Text(
               'Transfer Queue',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               '$fileCount files selected (${_formatBytes(_controller.queue.totalBytes)})',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[400],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[400]),
             ),
           ],
         ),
@@ -154,7 +241,10 @@ class _QueueScreenState extends State<QueueScreen> {
           const SizedBox(width: 12),
           IconButton(
             onPressed: disabled ? null : () => _controller.clearQueue(),
-            icon: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent),
+            icon: const Icon(
+              Icons.delete_sweep_rounded,
+              color: Colors.redAccent,
+            ),
             tooltip: 'Clear Queue',
             style: IconButton.styleFrom(
               backgroundColor: Colors.red[950]?.withOpacity(0.3),
@@ -165,7 +255,7 @@ class _QueueScreenState extends State<QueueScreen> {
               padding: const EdgeInsets.all(12),
             ),
           ),
-        ]
+        ],
       ],
     );
   }
@@ -193,10 +283,7 @@ class _QueueScreenState extends State<QueueScreen> {
           Text(
             'Add files or folders to get started with TrueTransfer.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
           ),
         ],
       ),
@@ -223,7 +310,9 @@ class _QueueScreenState extends State<QueueScreen> {
           child: Row(
             children: [
               Icon(
-                isFolderFile ? Icons.folder_open_rounded : Icons.insert_drive_file_rounded,
+                isFolderFile
+                    ? Icons.folder_open_rounded
+                    : Icons.insert_drive_file_rounded,
                 color: Colors.blueAccent,
                 size: 28,
               ),
@@ -244,12 +333,39 @@ class _QueueScreenState extends State<QueueScreen> {
                     const SizedBox(height: 4),
                     Text(
                       dir,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 10,
+                          color: Colors.grey[500],
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: InkWell(
+                            onTap: _controller.isTransferring
+                                ? null
+                                : () => _editItemDestination(item),
+                            child: Text(
+                              item.remoteDirectory.isNotEmpty
+                                  ? '${item.remoteDirectory}/${item.remotePath}'
+                                  : item.remotePath,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.blueAccent,
+                                decoration: TextDecoration.underline,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -284,6 +400,54 @@ class _QueueScreenState extends State<QueueScreen> {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _editItemDestination(dynamic item) {
+    final textController = TextEditingController(text: item.remoteDirectory);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[950],
+          title: const Text(
+            'Edit Remote Directory',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: TextField(
+            controller: textController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'e.g. Backups/Windows',
+              hintStyle: TextStyle(color: Colors.grey[600]),
+              filled: true,
+              fillColor: Colors.black45,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _controller.updateItemDestination(
+                  item.id,
+                  textController.text.trim(),
+                );
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+              ),
+              child: const Text('Save', style: TextStyle(color: Colors.white)),
+            ),
+          ],
         );
       },
     );

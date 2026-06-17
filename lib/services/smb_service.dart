@@ -23,7 +23,11 @@ abstract class SmbService {
 
   Future<void> writeFileRange(String path, Uint8List data, {int offset = 0});
 
-  Future<Uint8List> readFileRange(String path, {int offset = 0, required int length});
+  Future<Uint8List> readFileRange(
+    String path, {
+    int offset = 0,
+    required int length,
+  });
 
   bool get isConnected;
 }
