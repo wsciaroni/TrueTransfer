@@ -148,7 +148,7 @@ class _TransferScreenState extends State<TransferScreen> {
                     : (val) {
                         _controller.deleteSource = val;
                       },
-                activeColor: Colors.blueAccent,
+                activeThumbColor: Colors.blueAccent,
               ),
             ],
           ),
@@ -188,7 +188,7 @@ class _TransferScreenState extends State<TransferScreen> {
                   activeTrackColor: Colors.blueAccent,
                   inactiveTrackColor: Colors.black45,
                   thumbColor: Colors.blueAccent,
-                  overlayColor: Colors.blueAccent.withOpacity(0.2),
+                  overlayColor: Colors.blueAccent.withValues(alpha: 0.2),
                 ),
                 child: Slider(
                   value: _controller.parallelism.toDouble(),
@@ -236,7 +236,7 @@ class _TransferScreenState extends State<TransferScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.orange[900]?.withOpacity(0.3),
+        color: Colors.orange[900]?.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.orange[800]!),
       ),
@@ -271,7 +271,7 @@ class _TransferScreenState extends State<TransferScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.red[950]?.withOpacity(0.3),
+        color: Colors.red[950]?.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.red[900]!),
       ),

@@ -247,10 +247,10 @@ class _QueueScreenState extends State<QueueScreen> {
             ),
             tooltip: 'Clear Queue',
             style: IconButton.styleFrom(
-              backgroundColor: Colors.red[950]?.withOpacity(0.3),
+              backgroundColor: Colors.red[950]?.withValues(alpha: 0.3),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.red[900]!.withOpacity(0.3)),
+                side: BorderSide(color: Colors.red[900]!.withValues(alpha: 0.3)),
               ),
               padding: const EdgeInsets.all(12),
             ),
