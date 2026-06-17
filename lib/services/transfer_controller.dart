@@ -8,14 +8,22 @@ import '../models/smb_exceptions.dart';
 import 'smb_pool_manager.dart';
 import 'smb_file_transfer.dart';
 import '../utils/storage_manager.dart';
+import '../models/smb_connection_info.dart';
+import 'smb_service.dart';
 
 class TransferController extends ChangeNotifier {
   static final TransferController _instance = TransferController._internal();
   factory TransferController() => _instance;
   TransferController._internal();
 
-  final StorageManager _storageManager = StorageManager();
-  final SmbPoolManager _smbPoolManager = SmbPoolManager();
+  StorageManager _storageManager = StorageManager();
+  SmbService _smbPoolManager = SmbPoolManager();
+
+  @visibleForTesting
+  set storageManager(StorageManager manager) => _storageManager = manager;
+
+  @visibleForTesting
+  set smbPoolManager(SmbService manager) => _smbPoolManager = manager;
 
   TransferQueue queue = TransferQueue(items: []);
   
@@ -57,6 +65,17 @@ class TransferController extends ChangeNotifier {
         _totalStorageReclaimed += item.fileSize;
       }
     }
+
+    // Load saved SMB connection info
+    final savedInfo = await _storageManager.loadConnectionInfo();
+    if (savedInfo != null) {
+      host = savedInfo.host;
+      share = savedInfo.share;
+      username = savedInfo.username;
+      password = savedInfo.password;
+      domain = savedInfo.domain;
+    }
+
     notifyListeners();
   }
 
@@ -85,6 +104,16 @@ class TransferController extends ChangeNotifier {
       username = user;
       this.password = password;
       this.domain = domain;
+
+      // Save connection info between sessions
+      final info = SmbConnectionInfo(
+        host: host,
+        share: share,
+        username: user,
+        password: password,
+        domain: domain,
+      );
+      await _storageManager.saveConnectionInfo(info);
 
       _isConnecting = false;
       notifyListeners();

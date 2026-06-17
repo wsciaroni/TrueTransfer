@@ -94,6 +94,16 @@ class SmbPoolManager implements SmbService {
   }
 
   @override
+  Future<void> createDirectory(String path) async {
+    _ensureConnected();
+    try {
+      await _pool!.mkdir(path);
+    } catch (e) {
+      throw _wrapException(e);
+    }
+  }
+
+  @override
   Future<void> writeFileRange(String path, Uint8List data, {int offset = 0}) async {
     _ensureConnected();
     try {

@@ -18,6 +18,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   late TextEditingController _passwordController;
   late TextEditingController _domainController;
 
+  bool _hasLoadedCredentials = false;
+
   @override
   void initState() {
     super.initState();
@@ -26,16 +28,40 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
     _userController = TextEditingController(text: _controller.username ?? '');
     _passwordController = TextEditingController(text: _controller.password ?? '');
     _domainController = TextEditingController(text: _controller.domain ?? '');
+
+    if (_controller.host != null && _controller.host!.isNotEmpty) {
+      _hasLoadedCredentials = true;
+    }
+
+    _controller.addListener(_onControllerChanged);
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onControllerChanged);
     _hostController.dispose();
     _shareController.dispose();
     _userController.dispose();
     _passwordController.dispose();
     _domainController.dispose();
     super.dispose();
+  }
+
+  void _onControllerChanged() {
+    if (!_hasLoadedCredentials && !_controller.isConnected && !_controller.isConnecting) {
+      final hostVal = _controller.host;
+      final shareVal = _controller.share;
+      if ((hostVal != null && hostVal.isNotEmpty) || (shareVal != null && shareVal.isNotEmpty)) {
+        if (_hostController.text.isEmpty && _shareController.text.isEmpty) {
+          _hostController.text = hostVal ?? '';
+          _shareController.text = shareVal ?? '';
+          _userController.text = _controller.username ?? '';
+          _passwordController.text = _controller.password ?? '';
+          _domainController.text = _controller.domain ?? '';
+        }
+        _hasLoadedCredentials = true;
+      }
+    }
   }
 
   void _handleConnect() async {
