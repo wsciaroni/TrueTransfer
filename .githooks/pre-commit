@@ -1,0 +1,26 @@
+#!/bin/sh
+# pre-commit hook
+
+echo "Running dart format..."
+dart format --set-exit-if-changed .
+if [ $? -ne 0 ]; then
+  echo "Formatting failed, please format your code before committing."
+  exit 1
+fi
+
+echo "Running flutter analyze..."
+flutter analyze
+if [ $? -ne 0 ]; then
+  echo "Flutter analyze failed, please fix the issues before committing."
+  exit 1
+fi
+
+echo "Running flutter test..."
+flutter test
+if [ $? -ne 0 ]; then
+  echo "Flutter test failed, please fix the tests before committing."
+  exit 1
+fi
+
+echo "All pre-commit checks passed."
+exit 0
