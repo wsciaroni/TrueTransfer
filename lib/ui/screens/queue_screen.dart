@@ -250,7 +250,9 @@ class _QueueScreenState extends State<QueueScreen> {
               backgroundColor: Colors.red[950]?.withValues(alpha: 0.3),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.red[900]!.withValues(alpha: 0.3)),
+                side: BorderSide(
+                  color: Colors.red[900]!.withValues(alpha: 0.3),
+                ),
               ),
               padding: const EdgeInsets.all(12),
             ),

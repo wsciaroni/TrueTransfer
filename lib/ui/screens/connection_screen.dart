@@ -191,7 +191,10 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accentColor.withValues(alpha: 0.3), width: 1.5),
+        border: Border.all(
+          color: accentColor.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: accentColor.withValues(alpha: 0.05),
