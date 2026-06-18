@@ -464,12 +464,9 @@ void main() {
 /// A fake SMB service where the first `createDirectory` call throws (race),
 /// but `exists` returns true for that path on the second call.
 class _RacyMkdirFakeSmbService extends FakeSmbService {
-  _RacyMkdirFakeSmbService({required Uint8List fileBytes}) {
-    // Pre-populate with the file content for hash verification
-    this.fileBytes = fileBytes;
-  }
+  _RacyMkdirFakeSmbService({required this.fileBytes});
 
-  late final Uint8List fileBytes;
+  final Uint8List fileBytes;
   bool _mkdirCalled = false;
 
   @override
@@ -492,11 +489,9 @@ class _RacyMkdirFakeSmbService extends FakeSmbService {
 /// A fake SMB service where `createDirectory` always throws and `exists`
 /// always returns false — simulates a true failure that must be rethrown.
 class _AlwaysFailMkdirFakeSmbService extends FakeSmbService {
-  _AlwaysFailMkdirFakeSmbService({required Uint8List fileBytes}) {
-    this.fileBytes = fileBytes;
-  }
+  _AlwaysFailMkdirFakeSmbService({required this.fileBytes});
 
-  late final Uint8List fileBytes;
+  final Uint8List fileBytes;
 
   @override
   Future<void> createDirectory(String path) async {
