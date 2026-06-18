@@ -356,5 +356,153 @@ void main() {
       );
       expect(localFile.existsSync(), isFalse);
     });
+
+    test(
+      'Resume with .part smaller than requested offset adjusts offset to match remote size',
+      () async {
+        // Simulate a .part file smaller than the claimed offset
+        // e.g., we have 10 bytes on remote but caller says offset=30
+        final smallPartial = Uint8List.sublistView(fileBytes, 0, 10);
+        fakeSmbService.files['backup/test_file.txt.part'] = smallPartial;
+
+        // Transfer with resumeOffset > remoteSize  → should adjust down to 10
+        await fileTransfer.transferFile(
+          localPath: localFile.path,
+          remotePath: 'backup/test_file.txt',
+          onProgress: (transferred, total) {},
+          checkCancelled: () => false,
+          checkPaused: () => false,
+          resumeOffset: 30, // larger than the 10-byte remote file
+        );
+
+        // The transfer must still complete successfully
+        expect(
+          fakeSmbService.files.containsKey('backup/test_file.txt'),
+          isTrue,
+        );
+        expect(
+          String.fromCharCodes(fakeSmbService.files['backup/test_file.txt']!),
+          fileContent,
+        );
+      },
+    );
+
+    test('Resume with no .part file on remote resets offset to 0', () async {
+      // .part does NOT exist on remote; non-zero offset should reset to 0
+      // fakeSmbService.files is empty for this path
+      await fileTransfer.transferFile(
+        localPath: localFile.path,
+        remotePath: 'fresh/test_file.txt',
+        onProgress: (transferred, total) {},
+        checkCancelled: () => false,
+        checkPaused: () => false,
+        resumeOffset: 50, // > 0 but no .part exists
+      );
+
+      expect(fakeSmbService.files.containsKey('fresh/test_file.txt'), isTrue);
+      expect(
+        String.fromCharCodes(fakeSmbService.files['fresh/test_file.txt']!),
+        fileContent,
+      );
+    });
+
+    test(
+      'Directory creation race: concurrent mkdir failure ignored when dir exists afterward',
+      () async {
+        // Simulate a service where mkdir throws but the directory exists after
+        final racyService = _RacyMkdirFakeSmbService(fileBytes: fileBytes);
+        final racyTransfer = SmbFileTransfer(racyService);
+
+        // Create local source
+        final sourceFile = File('${tempDir.path}/racy_test.txt');
+        sourceFile.writeAsBytesSync(fileBytes);
+
+        // Transfer to a nested path — the first mkdir will fail with an exception
+        // but the directory will be "visible" via exists() afterward (race win)
+        await racyTransfer.transferFile(
+          localPath: sourceFile.path,
+          remotePath: 'concurrent_dir/racy_test.txt',
+          onProgress: (transferred, total) {},
+          checkCancelled: () => false,
+          checkPaused: () => false,
+        );
+
+        expect(
+          racyService.files.containsKey('concurrent_dir/racy_test.txt'),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'Directory creation race: rethrows when dir still absent after mkdir failure',
+      () async {
+        // Simulate a service where mkdir always fails and dir never exists
+        final failService = _AlwaysFailMkdirFakeSmbService(
+          fileBytes: fileBytes,
+        );
+        final failTransfer = SmbFileTransfer(failService);
+
+        final sourceFile = File('${tempDir.path}/fail_test.txt');
+        sourceFile.writeAsBytesSync(fileBytes);
+
+        expect(
+          () => failTransfer.transferFile(
+            localPath: sourceFile.path,
+            remotePath: 'bad_dir/fail_test.txt',
+            onProgress: (transferred, total) {},
+            checkCancelled: () => false,
+            checkPaused: () => false,
+          ),
+          throwsException,
+        );
+      },
+    );
   });
+}
+
+/// A fake SMB service where the first `createDirectory` call throws (race),
+/// but `exists` returns true for that path on the second call.
+class _RacyMkdirFakeSmbService extends FakeSmbService {
+  _RacyMkdirFakeSmbService({required Uint8List fileBytes}) {
+    // Pre-populate with the file content for hash verification
+    this.fileBytes = fileBytes;
+  }
+
+  late final Uint8List fileBytes;
+  bool _mkdirCalled = false;
+
+  @override
+  Future<void> createDirectory(String path) async {
+    if (!_mkdirCalled) {
+      _mkdirCalled = true;
+      // Simulate another process winning the race: add to directories before throwing
+      directories.add(path);
+      throw Exception('mkdir: already exists (race)');
+    }
+    directories.add(path);
+  }
+
+  @override
+  Future<bool> exists(String path) async {
+    return files.containsKey(path) || directories.contains(path);
+  }
+}
+
+/// A fake SMB service where `createDirectory` always throws and `exists`
+/// always returns false — simulates a true failure that must be rethrown.
+class _AlwaysFailMkdirFakeSmbService extends FakeSmbService {
+  _AlwaysFailMkdirFakeSmbService({required Uint8List fileBytes}) {
+    this.fileBytes = fileBytes;
+  }
+
+  late final Uint8List fileBytes;
+
+  @override
+  Future<void> createDirectory(String path) async {
+    throw Exception('mkdir: permission denied');
+  }
+
+  @override
+  Future<bool> exists(String path) async => false;
 }

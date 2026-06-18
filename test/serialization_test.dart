@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:truetransfer/models/transfer_item.dart';
 import 'package:truetransfer/models/transfer_queue.dart';
 import 'package:truetransfer/utils/storage_manager.dart';
+import 'package:truetransfer/utils/secure_storage.dart';
 
 void main() {
   group('TransferItem Serialization', () {
@@ -103,6 +104,66 @@ void main() {
       await storageManager.clearQueue();
       final clearedQueue = await storageManager.loadQueue();
       expect(clearedQueue.items, isEmpty);
+    });
+
+    test('loadQueue returns empty queue when file does not exist', () async {
+      // No saveQueue call — file doesn't exist
+      final queue = await storageManager.loadQueue();
+      expect(queue.items, isEmpty);
+    });
+
+    test(
+      'loadQueue returns empty queue when file contains invalid JSON',
+      () async {
+        final file = File('${tempDir.path}/transfer_queue.json');
+        await file.writeAsString('NOT_VALID_JSON{{{');
+        // Should gracefully recover, not throw
+        final queue = await storageManager.loadQueue();
+        expect(queue.items, isEmpty);
+      },
+    );
+  });
+
+  group('StorageManager Settings Tests', () {
+    late Directory tempDir;
+    late StorageManager storageManager;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync(
+        'truetransfer_settings_test',
+      );
+      storageManager = StorageManager(
+        baseDirectory: tempDir,
+        secureStorage: FakeSecureStorage(),
+      );
+    });
+
+    tearDown(() {
+      tempDir.deleteSync(recursive: true);
+    });
+
+    test('saveSettings and loadSettings round-trip', () async {
+      final settings = {'deleteSource': false, 'parallelism': 3};
+      await storageManager.saveSettings(settings);
+      final loaded = await storageManager.loadSettings();
+      expect(loaded, isNotNull);
+      expect(loaded!['deleteSource'], isFalse);
+      expect(loaded['parallelism'], 3);
+    });
+
+    test('loadSettings returns null when nothing was saved', () async {
+      final loaded = await storageManager.loadSettings();
+      expect(loaded, isNull);
+    });
+
+    test('clearSettings removes saved settings', () async {
+      await storageManager.saveSettings({
+        'deleteSource': true,
+        'parallelism': 2,
+      });
+      await storageManager.clearSettings();
+      final loaded = await storageManager.loadSettings();
+      expect(loaded, isNull);
     });
   });
 }
