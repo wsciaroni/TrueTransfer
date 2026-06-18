@@ -133,7 +133,8 @@ class _QueueScreenState extends State<QueueScreen> {
 
   Widget _buildGlobalDestinationInput() {
     // If the controller is empty but items have a destination, update it
-    if (_globalDestController.text.isEmpty && _controller.queue.items.isNotEmpty) {
+    if (_globalDestController.text.isEmpty &&
+        _controller.queue.items.isNotEmpty) {
       final defaultDir = _controller.queue.items.first.remoteDirectory;
       if (defaultDir.isNotEmpty) {
         _globalDestController.text = defaultDir;
@@ -200,7 +201,9 @@ class _QueueScreenState extends State<QueueScreen> {
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: () {
-                  _controller.updateAllDestinations(_globalDestController.text.trim());
+                  _controller.updateAllDestinations(
+                    _globalDestController.text.trim(),
+                  );
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(

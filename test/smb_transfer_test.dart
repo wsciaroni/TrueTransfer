@@ -108,7 +108,7 @@ class FakeSmbService implements SmbService {
     _maybeFail();
     final List<Smb2DirEntry> results = [];
     final prefix = path.isEmpty ? '' : (path.endsWith('/') ? path : '$path/');
-    
+
     // Find matching subdirectories in directories
     for (final dir in directories) {
       if (dir.startsWith(prefix) && dir != path) {
@@ -130,7 +130,7 @@ class FakeSmbService implements SmbService {
         }
       }
     }
-    
+
     // Find matching files
     for (final filePath in files.keys) {
       if (filePath.startsWith(prefix)) {

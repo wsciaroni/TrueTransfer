@@ -89,7 +89,10 @@ class _RemoteDirectoryPickerState extends State<RemoteDirectoryPicker> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.grey[950],
-          title: const Text('Create New Folder', style: TextStyle(color: Colors.white)),
+          title: const Text(
+            'Create New Folder',
+            style: TextStyle(color: Colors.white),
+          ),
           content: Form(
             key: formKey,
             child: TextFormField(
@@ -127,8 +130,13 @@ class _RemoteDirectoryPickerState extends State<RemoteDirectoryPicker> {
                   Navigator.pop(context, textController.text.trim());
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
-              child: const Text('Create', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+              ),
+              child: const Text(
+                'Create',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         );
@@ -138,7 +146,9 @@ class _RemoteDirectoryPickerState extends State<RemoteDirectoryPicker> {
     if (name != null && name.isNotEmpty) {
       setState(() => _isLoading = true);
       try {
-        final newFolderPath = _currentPath.isEmpty ? name : '$_currentPath/$name';
+        final newFolderPath = _currentPath.isEmpty
+            ? name
+            : '$_currentPath/$name';
         await _controller.createRemoteDirectory(newFolderPath);
         _loadDirectory();
       } catch (e) {
@@ -173,11 +183,13 @@ class _RemoteDirectoryPickerState extends State<RemoteDirectoryPicker> {
             Expanded(
               child: _isLoading
                   ? const Center(
-                      child: CircularProgressIndicator(color: Colors.blueAccent),
+                      child: CircularProgressIndicator(
+                        color: Colors.blueAccent,
+                      ),
                     )
                   : _error != null
-                      ? _buildErrorState()
-                      : _buildDirectoryList(),
+                  ? _buildErrorState()
+                  : _buildDirectoryList(),
             ),
             const Divider(color: Colors.grey, height: 24, thickness: 0.5),
             _buildActionButtons(),
@@ -193,19 +205,26 @@ class _RemoteDirectoryPickerState extends State<RemoteDirectoryPicker> {
       children: [
         Row(
           children: [
-            const Icon(Icons.folder_open_rounded, color: Colors.blueAccent, size: 28),
+            const Icon(
+              Icons.folder_open_rounded,
+              color: Colors.blueAccent,
+              size: 28,
+            ),
             const SizedBox(width: 12),
             Text(
               'Select Destination',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ],
         ),
         IconButton(
-          icon: const Icon(Icons.create_new_folder_outlined, color: Colors.blueAccent),
+          icon: const Icon(
+            Icons.create_new_folder_outlined,
+            color: Colors.blueAccent,
+          ),
           tooltip: 'Create New Folder',
           onPressed: _isLoading ? null : _createNewFolder,
         ),
@@ -246,7 +265,11 @@ class _RemoteDirectoryPickerState extends State<RemoteDirectoryPicker> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, size: 18, color: Colors.blueAccent),
+            icon: const Icon(
+              Icons.refresh_rounded,
+              size: 18,
+              color: Colors.blueAccent,
+            ),
             onPressed: _isLoading ? null : _loadDirectory,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -316,7 +339,11 @@ class _RemoteDirectoryPickerState extends State<RemoteDirectoryPicker> {
                     style: const TextStyle(color: Colors.white, fontSize: 14),
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 20),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey,
+                  size: 20,
+                ),
               ],
             ),
           ),
@@ -343,7 +370,9 @@ class _RemoteDirectoryPickerState extends State<RemoteDirectoryPicker> {
                 },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blueAccent,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
           child: const Text(

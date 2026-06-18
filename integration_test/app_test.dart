@@ -101,7 +101,9 @@ void main() {
     late TransferController controller;
 
     setUp(() async {
-      tempDir = Directory.systemTemp.createTempSync('truetransfer_integration_test');
+      tempDir = Directory.systemTemp.createTempSync(
+        'truetransfer_integration_test',
+      );
       storageManager = StorageManager(
         baseDirectory: tempDir,
         secureStorage: FakeSecureStorage(),
@@ -128,7 +130,9 @@ void main() {
       }
     });
 
-    testWidgets('Complete flow: Connect -> Queue -> Transfer -> Summary', (WidgetTester tester) async {
+    testWidgets('Complete flow: Connect -> Queue -> Transfer -> Summary', (
+      WidgetTester tester,
+    ) async {
       // Start the application
       await tester.pumpWidget(const MyApp());
       await tester.pumpAndSettle();
@@ -154,7 +158,10 @@ void main() {
       final connectButton = find.text('Connect to Share');
       expect(connectButton, findsOneWidget);
       await tester.ensureVisible(connectButton);
-      await tester.drag(find.byType(SingleChildScrollView).first, const Offset(0, -200));
+      await tester.drag(
+        find.byType(SingleChildScrollView).first,
+        const Offset(0, -200),
+      );
       await tester.pumpAndSettle();
       await tester.tap(connectButton, warnIfMissed: false);
       await tester.pumpAndSettle();
@@ -210,9 +217,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Backup Completed Successfully'), findsOneWidget);
-      
+
       // Formatting helper formats 37 bytes as "37.0 B"
-      expect(find.text('${fileSize.toDouble().toStringAsFixed(1)} B'), findsWidgets);
+      expect(
+        find.text('${fileSize.toDouble().toStringAsFixed(1)} B'),
+        findsWidgets,
+      );
     });
   });
 }
