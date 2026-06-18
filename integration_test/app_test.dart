@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:dart_smb2/dart_smb2.dart';
 import 'package:truetransfer/main.dart';
 import 'package:truetransfer/services/transfer_controller.dart';
 import 'package:truetransfer/services/smb_service.dart';
@@ -88,6 +89,11 @@ class IntegrationFakeSmbService implements SmbService {
         : length;
     if (actualLength <= 0) return Uint8List(0);
     return Uint8List.sublistView(fileData, offset, offset + actualLength);
+  }
+
+  @override
+  Future<List<Smb2DirEntry>> listDirectory(String path) async {
+    return [];
   }
 }
 

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
-import 'package:dart_smb2/dart_smb2.dart';
 import '../models/transfer_item.dart';
 import '../models/transfer_queue.dart';
 import '../models/smb_exceptions.dart';
