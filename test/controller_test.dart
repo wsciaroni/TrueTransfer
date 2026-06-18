@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
 import 'package:dart_smb2/dart_smb2.dart';
 import 'package:truetransfer/models/transfer_item.dart';
 import 'package:truetransfer/services/transfer_controller.dart';
@@ -234,5 +234,59 @@ void main() {
         isTrue,
       );
     });
+
+    test(
+      'queue execution passes sourceIdentifier and triggers deleteOriginalFile MethodChannel',
+      () async {
+        const channel = MethodChannel('com.example.truetransfer/file_ops');
+        final List<MethodCall> methodCalls = [];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              methodCalls.add(call);
+              return true;
+            });
+
+        try {
+          final controller = TransferController();
+          controller.storageManager = storageManager;
+          final fakeSmb = ConcurrencyFakeSmbService();
+          controller.smbPoolManager = fakeSmb;
+          controller.queue.clear();
+
+          final f = File('${tempDir.path}/f_uri.txt')
+            ..writeAsBytesSync(Uint8List(10));
+
+          final item = TransferItem(
+            id: 'i_uri',
+            sourcePath: f.path,
+            remotePath: 'rf_uri.txt',
+            fileSize: 10,
+            sourceIdentifier: 'content://media/external/file/456',
+          );
+
+          controller.queue.add(item);
+          controller.deleteSource = true;
+
+          controller.startTransfer();
+
+          while (controller.isTransferring) {
+            await Future.delayed(const Duration(milliseconds: 10));
+          }
+
+          // Verify transfer completed and MethodChannel was invoked
+          expect(controller.queue.items[0].status, TransferStatus.completed);
+          expect(methodCalls.length, 1);
+          expect(methodCalls.first.method, 'deleteFileUri');
+          expect(
+            methodCalls.first.arguments['uri'],
+            'content://media/external/file/456',
+          );
+          expect(f.existsSync(), isFalse);
+        } finally {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(channel, null);
+        }
+      },
+    );
   });
 }

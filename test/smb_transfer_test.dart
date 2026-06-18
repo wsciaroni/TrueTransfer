@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
 import 'package:dart_smb2/dart_smb2.dart';
 import 'package:truetransfer/services/smb_service.dart';
 import 'package:truetransfer/services/smb_file_transfer.dart';
@@ -166,6 +166,7 @@ class FakeSmbService implements SmbService {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late Directory tempDir;
   late File localFile;
   late FakeSmbService fakeSmbService;
@@ -215,6 +216,44 @@ void main() {
       // Verify local source file is deleted (transaction completed)
       expect(localFile.existsSync(), isFalse);
     });
+
+    test(
+      'Successful transfer with deleteSource: true and sourceIdentifier calls deleteOriginalFile MethodChannel',
+      () async {
+        const channel = MethodChannel('com.example.truetransfer/file_ops');
+        final List<MethodCall> methodCalls = [];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (MethodCall call) async {
+              methodCalls.add(call);
+              return true;
+            });
+
+        try {
+          await fileTransfer.transferFile(
+            localPath: localFile.path,
+            remotePath: 'backup/test_file.txt',
+            onProgress: (transferred, total) {},
+            checkCancelled: () => false,
+            checkPaused: () => false,
+            deleteSource: true,
+            sourceIdentifier: 'content://media/external/file/123',
+          );
+
+          // Verify the MethodChannel was invoked with the content URI
+          expect(methodCalls.length, 1);
+          expect(methodCalls.first.method, 'deleteFileUri');
+          expect(
+            methodCalls.first.arguments['uri'],
+            'content://media/external/file/123',
+          );
+          // Verify local cached file is also deleted
+          expect(localFile.existsSync(), isFalse);
+        } finally {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(channel, null);
+        }
+      },
+    );
 
     test(
       'Successful transfer with deleteSource: false preserves local source file',

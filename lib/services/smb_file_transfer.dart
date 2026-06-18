@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'smb_service.dart';
+import '../utils/platform_file_ops.dart';
 
 class SmbFileTransfer {
   final SmbService smbService;
@@ -18,6 +19,7 @@ class SmbFileTransfer {
     required bool Function() checkPaused,
     int resumeOffset = 0,
     bool deleteSource = true,
+    String? sourceIdentifier,
   }) async {
     final localFile = File(localPath);
     if (!await localFile.exists()) {
@@ -43,10 +45,14 @@ class SmbFileTransfer {
       }
     }
 
-    // 2. Stream file content in chunks
-    final inputStream = localFile.openRead(currentOffset);
+    // 2. Stream file content in chunks using RandomAccessFile
+    final raf = await localFile.open(mode: FileMode.read);
     try {
-      await for (final chunk in inputStream) {
+      if (currentOffset > 0) {
+        await raf.setPosition(currentOffset);
+      }
+      final buffer = Uint8List(64 * 1024); // 64KB chunk buffer
+      while (currentOffset < totalBytes) {
         if (checkCancelled()) {
           throw Exception('Transfer cancelled.');
         }
@@ -54,21 +60,16 @@ class SmbFileTransfer {
           throw Exception('Transfer paused.');
         }
 
-        final uint8Chunk = chunk is Uint8List
-            ? chunk
-            : Uint8List.fromList(chunk);
+        final bytesRead = await raf.readInto(buffer);
+        if (bytesRead <= 0) break;
 
-        await smbService.writeFileRange(
-          tempPath,
-          uint8Chunk,
-          offset: currentOffset,
-        );
-        currentOffset += uint8Chunk.length;
+        final chunk = Uint8List.sublistView(buffer, 0, bytesRead);
+        await smbService.writeFileRange(tempPath, chunk, offset: currentOffset);
+        currentOffset += bytesRead;
         onProgress(currentOffset, totalBytes);
       }
-    } catch (e) {
-      // Preserve .part file for resume capacity, just rethrow
-      rethrow;
+    } finally {
+      await raf.close();
     }
 
     // 3. Verify integrity
@@ -94,6 +95,9 @@ class SmbFileTransfer {
 
     // 5. Transactional Deletion
     if (deleteSource) {
+      // First attempt to delete the original content URI if on Android/iOS
+      await PlatformFileOps.deleteOriginalFile(sourceIdentifier);
+      // Clean up the local cached file
       await localFile.delete();
     }
   }
@@ -101,9 +105,16 @@ class SmbFileTransfer {
   Future<String> _calculateLocalHash(File file) async {
     final sink = _HashSink();
     final output = sha256.startChunkedConversion(sink);
-    final input = file.openRead();
-    await for (final chunk in input) {
-      output.add(chunk);
+    final raf = await file.open(mode: FileMode.read);
+    try {
+      final buffer = Uint8List(64 * 1024); // 64KB buffer
+      while (true) {
+        final bytesRead = await raf.readInto(buffer);
+        if (bytesRead <= 0) break;
+        output.add(Uint8List.sublistView(buffer, 0, bytesRead));
+      }
+    } finally {
+      await raf.close();
     }
     output.close();
     return sink.value?.toString() ?? '';

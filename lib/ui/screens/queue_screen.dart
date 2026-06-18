@@ -60,9 +60,8 @@ class _QueueScreenState extends State<QueueScreen> {
   void _pickFiles() async {
     try {
       final result = await FilePicker.platform.pickFiles(allowMultiple: true);
-      if (result != null && result.paths.isNotEmpty) {
-        final paths = result.paths.whereType<String>().toList();
-        await _controller.addFilesToQueue(paths);
+      if (result != null && result.files.isNotEmpty) {
+        await _controller.addPlatformFilesToQueue(result.files);
       }
     } catch (e) {
       _showErrorSnackBar('Error picking files: $e');

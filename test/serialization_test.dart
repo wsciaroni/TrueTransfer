@@ -20,6 +20,8 @@ void main() {
         errorMessage: 'Some error',
         resumeOffset: 256,
         remoteDirectory: 'backups/2026',
+        sourceIdentifier:
+            'content://com.android.providers.media.documents/document/image%3A123',
       );
 
       final json = item.toJson();
@@ -36,6 +38,24 @@ void main() {
       expect(decoded.errorMessage, item.errorMessage);
       expect(decoded.resumeOffset, item.resumeOffset);
       expect(decoded.remoteDirectory, item.remoteDirectory);
+      expect(decoded.sourceIdentifier, item.sourceIdentifier);
+    });
+
+    test('copyWith should support sourceIdentifier', () {
+      final item = TransferItem(
+        id: '123',
+        sourcePath: '/local/file.txt',
+        remotePath: 'dst',
+        fileSize: 1024,
+        sourceIdentifier: 'id1',
+      );
+
+      final copied = item.copyWith(sourceIdentifier: 'id2');
+      expect(copied.sourceIdentifier, 'id2');
+      expect(copied.id, '123');
+
+      final copiedNull = item.copyWith(sourceIdentifier: null);
+      expect(copiedNull.sourceIdentifier, 'id1');
     });
   });
 

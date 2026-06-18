@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import '../models/transfer_item.dart';
 import '../models/transfer_queue.dart';
@@ -182,6 +183,29 @@ class TransferController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> addPlatformFilesToQueue(List<PlatformFile> platformFiles) async {
+    for (final pf in platformFiles) {
+      if (pf.path != null) {
+        final file = File(pf.path!);
+        if (await file.exists()) {
+          final size = await file.length();
+          final name = p.basename(pf.path!);
+
+          final item = TransferItem(
+            id: '${DateTime.now().microsecondsSinceEpoch}_${pf.path.hashCode}',
+            sourcePath: pf.path!,
+            remotePath: name, // Placed at root of share
+            fileSize: size,
+            sourceIdentifier: pf.identifier,
+          );
+          queue.add(item);
+        }
+      }
+    }
+    await _storageManager.saveQueue(queue);
+    notifyListeners();
+  }
+
   Future<void> addFolderToQueue(String folderPath) async {
     final dir = Directory(folderPath);
     if (!await dir.exists()) return;
@@ -347,6 +371,7 @@ class TransferController extends ChangeNotifier {
           remotePath: resolvedRemotePath,
           resumeOffset: item.resumeOffset,
           deleteSource: _deleteSource,
+          sourceIdentifier: item.sourceIdentifier,
           onProgress: (transferred, total) {
             item.transferredBytes = transferred;
             item.resumeOffset = transferred;
