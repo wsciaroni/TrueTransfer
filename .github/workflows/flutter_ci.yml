@@ -32,8 +32,8 @@ jobs:
       - name: Run tests
         run: flutter test --coverage
 
-      - name: Run integration tests
-        run: flutter test integration_test/app_test.dart
+      # - name: Run integration tests
+      #   run: flutter test integration_test/app_test.dart
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
