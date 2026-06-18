@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import '../../services/transfer_controller.dart';
+import '../widgets/remote_directory_picker.dart';
 
 class QueueScreen extends StatefulWidget {
   const QueueScreen({super.key});
@@ -12,6 +13,49 @@ class QueueScreen extends StatefulWidget {
 
 class _QueueScreenState extends State<QueueScreen> {
   final _controller = TransferController();
+  late TextEditingController _globalDestController;
+
+  @override
+  void initState() {
+    super.initState();
+    _globalDestController = TextEditingController(
+      text: _controller.queue.items.isNotEmpty
+          ? _controller.queue.items.first.remoteDirectory
+          : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _globalDestController.dispose();
+    super.dispose();
+  }
+
+  void _browseGlobalDestination() {
+    if (!_controller.isConnected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please connect to the SMB share first.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return RemoteDirectoryPicker(
+          initialPath: _globalDestController.text,
+          onSelected: (path) {
+            setState(() {
+              _globalDestController.text = path;
+            });
+          },
+        );
+      },
+    );
+  }
 
   void _pickFiles() async {
     try {
@@ -88,11 +132,14 @@ class _QueueScreenState extends State<QueueScreen> {
   }
 
   Widget _buildGlobalDestinationInput() {
-    final textController = TextEditingController(
-      text: _controller.queue.items.isNotEmpty
-          ? _controller.queue.items.first.remoteDirectory
-          : '',
-    );
+    // If the controller is empty but items have a destination, update it
+    if (_globalDestController.text.isEmpty && _controller.queue.items.isNotEmpty) {
+      final defaultDir = _controller.queue.items.first.remoteDirectory;
+      if (defaultDir.isNotEmpty) {
+        _globalDestController.text = defaultDir;
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -116,7 +163,7 @@ class _QueueScreenState extends State<QueueScreen> {
             children: [
               Expanded(
                 child: TextField(
-                  controller: textController,
+                  controller: _globalDestController,
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   decoration: InputDecoration(
                     hintText: 'e.g. Backups/Windows, Leave empty for root',
@@ -126,6 +173,17 @@ class _QueueScreenState extends State<QueueScreen> {
                       color: Colors.grey[500],
                       size: 18,
                     ),
+                    suffixIcon: _controller.isConnected
+                        ? IconButton(
+                            icon: const Icon(
+                              Icons.folder_open_outlined,
+                              color: Colors.blueAccent,
+                              size: 20,
+                            ),
+                            tooltip: 'Browse Remote Folders',
+                            onPressed: _browseGlobalDestination,
+                          )
+                        : null,
                     filled: true,
                     fillColor: Colors.black45,
                     border: OutlineInputBorder(
@@ -142,7 +200,7 @@ class _QueueScreenState extends State<QueueScreen> {
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: () {
-                  _controller.updateAllDestinations(textController.text.trim());
+                  _controller.updateAllDestinations(_globalDestController.text.trim());
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(
@@ -418,18 +476,53 @@ class _QueueScreenState extends State<QueueScreen> {
             'Edit Remote Directory',
             style: TextStyle(color: Colors.white),
           ),
-          content: TextField(
-            controller: textController,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'e.g. Backups/Windows',
-              hintStyle: TextStyle(color: Colors.grey[600]),
-              filled: true,
-              fillColor: Colors.black45,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: textController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'e.g. Backups/Windows',
+                  hintStyle: TextStyle(color: Colors.grey[600]),
+                  filled: true,
+                  fillColor: Colors.black45,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: !_controller.isConnected
+                      ? null
+                      : () {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) {
+                              return RemoteDirectoryPicker(
+                                initialPath: textController.text,
+                                onSelected: (path) {
+                                  textController.text = path;
+                                },
+                              );
+                            },
+                          );
+                        },
+                  icon: const Icon(Icons.folder_open_rounded),
+                  label: const Text('Browse Remote Folders'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.blueAccent,
+                    side: const BorderSide(color: Colors.blueAccent),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(

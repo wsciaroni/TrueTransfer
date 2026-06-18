@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dart_smb2/dart_smb2.dart';
 import 'package:truetransfer/services/smb_service.dart';
 import 'package:truetransfer/services/smb_file_transfer.dart';
 
@@ -100,6 +101,60 @@ class FakeSmbService implements SmbService {
         : length;
     if (actualLength <= 0) return Uint8List(0);
     return Uint8List.sublistView(fileData, offset, offset + actualLength);
+  }
+
+  @override
+  Future<List<Smb2DirEntry>> listDirectory(String path) async {
+    _maybeFail();
+    final List<Smb2DirEntry> results = [];
+    final prefix = path.isEmpty ? '' : (path.endsWith('/') ? path : '$path/');
+    
+    // Find matching subdirectories in directories
+    for (final dir in directories) {
+      if (dir.startsWith(prefix) && dir != path) {
+        final relative = dir.substring(prefix.length);
+        final parts = relative.split('/');
+        final name = parts.first;
+        if (name.isNotEmpty && !results.any((e) => e.name == name)) {
+          results.add(
+            Smb2DirEntry(
+              name: name,
+              stat: Smb2Stat(
+                type: Smb2FileType.directory,
+                size: 0,
+                modified: DateTime.now(),
+                created: DateTime.now(),
+              ),
+            ),
+          );
+        }
+      }
+    }
+    
+    // Find matching files
+    for (final filePath in files.keys) {
+      if (filePath.startsWith(prefix)) {
+        final relative = filePath.substring(prefix.length);
+        final parts = relative.split('/');
+        if (parts.length == 1) {
+          final name = parts.first;
+          if (name.isNotEmpty && !results.any((e) => e.name == name)) {
+            results.add(
+              Smb2DirEntry(
+                name: name,
+                stat: Smb2Stat(
+                  type: Smb2FileType.file,
+                  size: files[filePath]!.length,
+                  modified: DateTime.now(),
+                  created: DateTime.now(),
+                ),
+              ),
+            );
+          }
+        }
+      }
+    }
+    return results;
   }
 
   void _maybeFail() {

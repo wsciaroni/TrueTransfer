@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
+import 'package:dart_smb2/dart_smb2.dart';
 import '../models/transfer_item.dart';
 import '../models/transfer_queue.dart';
 import '../models/smb_exceptions.dart';
@@ -243,6 +244,24 @@ class TransferController extends ChangeNotifier {
     _totalStorageReclaimed = 0;
     await _storageManager.clearQueue();
     notifyListeners();
+  }
+
+  Future<List<String>> listRemoteSubdirectories(String path) async {
+    if (!isConnected) return [];
+    try {
+      final entries = await _smbPoolManager.listDirectory(path);
+      return entries
+          .where((entry) => entry.isDirectory)
+          .map((entry) => entry.name)
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> createRemoteDirectory(String path) async {
+    if (!isConnected) return;
+    await _smbPoolManager.createDirectory(path);
   }
 
   void startTransfer() {

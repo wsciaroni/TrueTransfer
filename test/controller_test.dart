@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dart_smb2/dart_smb2.dart';
 import 'package:truetransfer/models/transfer_item.dart';
 import 'package:truetransfer/services/transfer_controller.dart';
 import 'package:truetransfer/services/smb_service.dart';
@@ -62,6 +63,11 @@ class ConcurrencyFakeSmbService implements SmbService {
     String? domain,
   }) async {
     isConnected = true;
+  }
+
+  @override
+  Future<List<Smb2DirEntry>> listDirectory(String path) async {
+    return [];
   }
 
   @override

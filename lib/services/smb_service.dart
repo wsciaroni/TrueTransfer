@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:dart_smb2/dart_smb2.dart';
 
 abstract class SmbService {
   Future<void> connect({
@@ -28,6 +29,8 @@ abstract class SmbService {
     int offset = 0,
     required int length,
   });
+
+  Future<List<Smb2DirEntry>> listDirectory(String path);
 
   bool get isConnected;
 }

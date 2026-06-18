@@ -131,6 +131,16 @@ class SmbPoolManager implements SmbService {
     }
   }
 
+  @override
+  Future<List<Smb2DirEntry>> listDirectory(String path) async {
+    _ensureConnected();
+    try {
+      return await _pool!.listDirectory(path);
+    } catch (e) {
+      throw _wrapException(e);
+    }
+  }
+
   void _ensureConnected() {
     if (_pool == null || !_isConnected) {
       throw SmbException(
