@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../../services/transfer_controller.dart';
 import '../../models/transfer_item.dart';
+import '../../utils/platform_file_ops.dart';
 
 class TransferScreen extends StatefulWidget {
   const TransferScreen({super.key});
@@ -145,7 +147,20 @@ class _TransferScreenState extends State<TransferScreen> {
                 value: _controller.deleteSource,
                 onChanged: disabled
                     ? null
-                    : (val) {
+                    : (val) async {
+                        if (val && Platform.isAndroid) {
+                          final hasPermission =
+                              await PlatformFileOps.hasManageStoragePermission();
+                          if (!hasPermission) {
+                            if (mounted) {
+                              final granted =
+                                  await _showPermissionRequestDialog(context);
+                              if (!granted) {
+                                return;
+                              }
+                            }
+                          }
+                        }
                         _controller.deleteSource = val;
                       },
                 activeThumbColor: Colors.blueAccent,
@@ -582,5 +597,46 @@ class _TransferScreenState extends State<TransferScreen> {
         ),
       ],
     );
+  }
+
+  Future<bool> _showPermissionRequestDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E1E2E),
+          title: const Text(
+            'All Files Access Required',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            'Deleting source files on Android 11+ requires the "All Files Access" (MANAGE_EXTERNAL_STORAGE) permission.\n\nYou will be redirected to the Android system settings to enable this permission for TrueTransfer.',
+            style: TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+                PlatformFileOps.requestManageStoragePermission();
+              },
+              child: const Text('Go to Settings'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
   }
 }

@@ -7,6 +7,7 @@ void main() {
 
   const channel = MethodChannel('com.example.truetransfer/file_ops');
   final List<MethodCall> log = <MethodCall>[];
+  bool mockHasPermission = true;
 
   setUp(() {
     log.clear();
@@ -22,6 +23,10 @@ void main() {
               );
             }
             return true;
+          } else if (methodCall.method == 'checkManageStoragePermission') {
+            return mockHasPermission;
+          } else if (methodCall.method == 'requestManageStoragePermission') {
+            return null;
           }
           return null;
         });
@@ -80,6 +85,33 @@ void main() {
             ),
           ),
         );
+      },
+    );
+
+    test(
+      'hasManageStoragePermission should return the correct value from MethodChannel',
+      () async {
+        mockHasPermission = true;
+        final resTrue = await PlatformFileOps.hasManageStoragePermission();
+        expect(log.length, 1);
+        expect(log.first.method, 'checkManageStoragePermission');
+        expect(resTrue, isTrue);
+
+        log.clear();
+        mockHasPermission = false;
+        final resFalse = await PlatformFileOps.hasManageStoragePermission();
+        expect(log.length, 1);
+        expect(log.first.method, 'checkManageStoragePermission');
+        expect(resFalse, isFalse);
+      },
+    );
+
+    test(
+      'requestManageStoragePermission should call the correct MethodChannel',
+      () async {
+        await PlatformFileOps.requestManageStoragePermission();
+        expect(log.length, 1);
+        expect(log.first.method, 'requestManageStoragePermission');
       },
     );
   });

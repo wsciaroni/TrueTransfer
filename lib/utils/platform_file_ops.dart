@@ -39,4 +39,25 @@ class PlatformFileOps {
 
     return false;
   }
+
+  /// Checks if the app has permission to manage external storage.
+  /// Always returns true on non-Android platforms.
+  static Future<bool> hasManageStoragePermission() async {
+    try {
+      final result = await _channel.invokeMethod<bool>(
+        'checkManageStoragePermission',
+      );
+      return result ?? true;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  /// Launches system settings to request all files access permission.
+  /// Does nothing on non-Android platforms.
+  static Future<void> requestManageStoragePermission() async {
+    try {
+      await _channel.invokeMethod('requestManageStoragePermission');
+    } catch (_) {}
+  }
 }
