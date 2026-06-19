@@ -11,7 +11,7 @@ class SmbFileTransfer {
 
   /// Transfers a local file to the remote SMB share with progress tracking,
   /// resumption support, integrity checks, and transactional source deletion.
-  Future<void> transferFile({
+  Future<bool> transferFile({
     required String localPath,
     required String remotePath,
     required void Function(int transferredBytes, int totalBytes) onProgress,
@@ -29,6 +29,22 @@ class SmbFileTransfer {
 
     // Ensure intermediate directories exist
     await _ensureParentDirectoriesExist(remotePath);
+
+    // Check if the file already exists at the remote path with matching size and checksum
+    if (await smbService.exists(remotePath)) {
+      final remoteSize = await smbService.fileSize(remotePath);
+      if (remoteSize == totalBytes) {
+        final localHash = await _calculateLocalHash(localFile);
+        final remoteHash = await _calculateRemoteHash(remotePath, totalBytes);
+        if (localHash == remoteHash) {
+          if (deleteSource) {
+            await PlatformFileOps.deleteOriginalFile(sourceIdentifier);
+            await localFile.delete();
+          }
+          return false;
+        }
+      }
+    }
 
     final tempPath = '$remotePath.part';
 
@@ -100,6 +116,8 @@ class SmbFileTransfer {
       // Clean up the local cached file
       await localFile.delete();
     }
+
+    return true;
   }
 
   Future<String> _calculateLocalHash(File file) async {

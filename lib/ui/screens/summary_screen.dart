@@ -25,7 +25,11 @@ class SummaryScreen extends StatelessWidget {
     final controller = TransferController();
     final items = controller.queue.items;
     final completedItems = items
-        .where((item) => item.status == TransferStatus.completed)
+        .where(
+          (item) =>
+              item.status == TransferStatus.completed ||
+              item.status == TransferStatus.alreadyBackedUp,
+        )
         .toList();
     final failedItems = items
         .where((item) => item.status == TransferStatus.failed)
@@ -228,7 +232,9 @@ class SummaryScreen extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = allItems[index];
         final name = p.basename(item.sourcePath);
-        final isSuccess = item.status == TransferStatus.completed;
+        final isSuccess =
+            item.status == TransferStatus.completed ||
+            item.status == TransferStatus.alreadyBackedUp;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
@@ -260,6 +266,15 @@ class SummaryScreen extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (item.status == TransferStatus.alreadyBackedUp) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Already backed up',
+                        style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                     if (!isSuccess && item.errorMessage != null) ...[
                       const SizedBox(height: 4),
                       Text(

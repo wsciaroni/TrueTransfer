@@ -88,6 +88,8 @@ class TransferController extends ChangeNotifier {
       if (item.status == TransferStatus.completed) {
         _totalBytesMoved += item.fileSize;
         _totalStorageReclaimed += item.fileSize;
+      } else if (item.status == TransferStatus.alreadyBackedUp) {
+        _totalStorageReclaimed += item.fileSize;
       }
     }
 
@@ -366,7 +368,7 @@ class TransferController extends ChangeNotifier {
             ? '${item.remoteDirectory}/${item.remotePath}'
             : item.remotePath;
 
-        await fileTransfer.transferFile(
+        final wasCopied = await fileTransfer.transferFile(
           localPath: item.sourcePath,
           remotePath: resolvedRemotePath,
           resumeOffset: item.resumeOffset,
@@ -389,8 +391,13 @@ class TransferController extends ChangeNotifier {
           checkPaused: () => _isPaused,
         );
 
-        item.status = TransferStatus.completed;
-        _totalBytesMoved += item.fileSize;
+        if (wasCopied) {
+          item.status = TransferStatus.completed;
+          _totalBytesMoved += item.fileSize;
+        } else {
+          item.status = TransferStatus.alreadyBackedUp;
+          item.transferredBytes = item.fileSize;
+        }
         if (_deleteSource) {
           _totalStorageReclaimed += item.fileSize;
         }

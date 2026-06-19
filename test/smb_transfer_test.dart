@@ -497,6 +497,95 @@ void main() {
         );
       },
     );
+
+    test(
+      'Duplicate file with matching checksum and deleteSource: true should skip copy and delete local source',
+      () async {
+        fakeSmbService.files['backup/test_file.txt'] = fileBytes;
+
+        final didCopy = await fileTransfer.transferFile(
+          localPath: localFile.path,
+          remotePath: 'backup/test_file.txt',
+          onProgress: (transferred, total) {},
+          checkCancelled: () => false,
+          checkPaused: () => false,
+          deleteSource: true,
+        );
+
+        expect(didCopy, isFalse);
+        expect(
+          fakeSmbService.files.containsKey('backup/test_file.txt'),
+          isTrue,
+        );
+        expect(fakeSmbService.files['backup/test_file.txt'], fileBytes);
+        expect(localFile.existsSync(), isFalse);
+      },
+    );
+
+    test(
+      'Duplicate file with matching checksum and deleteSource: false should skip copy and preserve local source',
+      () async {
+        fakeSmbService.files['backup/test_file.txt'] = fileBytes;
+
+        final didCopy = await fileTransfer.transferFile(
+          localPath: localFile.path,
+          remotePath: 'backup/test_file.txt',
+          onProgress: (transferred, total) {},
+          checkCancelled: () => false,
+          checkPaused: () => false,
+          deleteSource: false,
+        );
+
+        expect(didCopy, isFalse);
+        expect(
+          fakeSmbService.files.containsKey('backup/test_file.txt'),
+          isTrue,
+        );
+        expect(fakeSmbService.files['backup/test_file.txt'], fileBytes);
+        expect(localFile.existsSync(), isTrue);
+      },
+    );
+
+    test(
+      'Duplicate file with differing size should overwrite remote file',
+      () async {
+        final differentBytes = Uint8List.fromList([1, 2, 3]);
+        fakeSmbService.files['backup/test_file.txt'] = differentBytes;
+
+        final didCopy = await fileTransfer.transferFile(
+          localPath: localFile.path,
+          remotePath: 'backup/test_file.txt',
+          onProgress: (transferred, total) {},
+          checkCancelled: () => false,
+          checkPaused: () => false,
+          deleteSource: false,
+        );
+
+        expect(didCopy, isTrue);
+        expect(fakeSmbService.files['backup/test_file.txt'], fileBytes);
+      },
+    );
+
+    test(
+      'Duplicate file with matching size but differing checksum should overwrite remote file',
+      () async {
+        final differentBytes = Uint8List(fileBytes.length)
+          ..setAll(0, List.filled(fileBytes.length, 65));
+        fakeSmbService.files['backup/test_file.txt'] = differentBytes;
+
+        final didCopy = await fileTransfer.transferFile(
+          localPath: localFile.path,
+          remotePath: 'backup/test_file.txt',
+          onProgress: (transferred, total) {},
+          checkCancelled: () => false,
+          checkPaused: () => false,
+          deleteSource: false,
+        );
+
+        expect(didCopy, isTrue);
+        expect(fakeSmbService.files['backup/test_file.txt'], fileBytes);
+      },
+    );
   });
 }
 

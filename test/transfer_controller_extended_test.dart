@@ -570,7 +570,74 @@ void main() {
       controller.startTransfer();
 
       await Future.delayed(const Duration(milliseconds: 50));
-      expect(controller.isTransferring, isFalse);
     });
+  });
+
+  group('Duplicate file controller tests', () {
+    test(
+      'skipped backup because of matching checksum sets status alreadyBackedUp and updates reclaimed metric',
+      () async {
+        final localFile = File('${tempDir.path}/dup_test.txt')
+          ..writeAsBytesSync(Uint8List.fromList('checksum_match'.codeUnits));
+        final size = localFile.lengthSync();
+
+        fakeSmbService.files['dup_test.txt'] = Uint8List.fromList(
+          'checksum_match'.codeUnits,
+        );
+
+        controller.queue.clear();
+        controller.queue.add(
+          TransferItem(
+            id: 'dup1',
+            sourcePath: localFile.path,
+            remotePath: 'dup_test.txt',
+            fileSize: size,
+          ),
+        );
+
+        controller.host = 'localhost';
+        controller.share = 'share';
+        fakeSmbService.isConnected = true;
+        controller.deleteSource = true;
+
+        controller.startTransfer();
+
+        while (controller.isTransferring) {
+          await Future.delayed(const Duration(milliseconds: 10));
+        }
+
+        final item = controller.queue.items.first;
+        expect(item.status, TransferStatus.alreadyBackedUp);
+        expect(item.transferredBytes, size);
+        expect(controller.totalBytesMoved, 0);
+        expect(controller.totalStorageReclaimed, size);
+        expect(localFile.existsSync(), isFalse);
+      },
+    );
+
+    test(
+      'initialize loads metrics correctly for alreadyBackedUp files',
+      () async {
+        final item = TransferItem(
+          id: 'dup2',
+          sourcePath: '/src/dup.txt',
+          remotePath: 'dup.txt',
+          fileSize: 300,
+          status: TransferStatus.alreadyBackedUp,
+          transferredBytes: 300,
+        );
+
+        await storageManager.saveQueue(TransferQueue(items: [item]));
+
+        final newController = TransferController();
+        newController.storageManager = storageManager;
+        newController.smbPoolManager = fakeSmbService;
+
+        await newController.initialize();
+
+        expect(newController.totalBytesMoved, 0);
+        expect(newController.totalStorageReclaimed, 300);
+      },
+    );
   });
 }

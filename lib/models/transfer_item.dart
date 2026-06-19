@@ -5,6 +5,7 @@ enum TransferStatus {
   completed,
   failed,
   paused,
+  alreadyBackedUp,
 }
 
 class TransferItem {
