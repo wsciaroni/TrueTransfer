@@ -66,13 +66,20 @@ void main() {
     );
 
     test(
-      'deleteOriginalFile returns false if MethodChannel throws exception',
+      'deleteOriginalFile throws if MethodChannel throws exception',
       () async {
-        final success = await PlatformFileOps.deleteOriginalFile(
-          'content://media/external/file/fail',
+        expect(
+          () => PlatformFileOps.deleteOriginalFile(
+            'content://media/external/file/fail',
+          ),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Failed to delete source file'),
+            ),
+          ),
         );
-        expect(log.length, 1);
-        expect(success, isFalse);
       },
     );
   });
