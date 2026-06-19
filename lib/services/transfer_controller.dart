@@ -49,6 +49,10 @@ class TransferController extends ChangeNotifier {
   bool _deleteSource = true;
   int _parallelism = 1;
 
+  bool _isAddingToQueue = false;
+  int _addingTotal = 0;
+  int _addingCompleted = 0;
+
   // Getters & Setters
   bool get deleteSource => _deleteSource;
   set deleteSource(bool val) {
@@ -80,6 +84,17 @@ class TransferController extends ChangeNotifier {
   double get speedMBps => _speedMBps;
   int get totalBytesMoved => _totalBytesMoved;
   int get totalStorageReclaimed => _totalStorageReclaimed;
+
+  bool get isAddingToQueue => _isAddingToQueue;
+  int get addingTotal => _addingTotal;
+  int get addingCompleted => _addingCompleted;
+
+  void setAddingToQueue(bool value, {int total = 0, int completed = 0}) {
+    _isAddingToQueue = value;
+    _addingTotal = total;
+    _addingCompleted = completed;
+    notifyListeners();
+  }
 
   Future<void> initialize() async {
     queue = await _storageManager.loadQueue();
@@ -166,6 +181,12 @@ class TransferController extends ChangeNotifier {
   }
 
   Future<void> addFilesToQueue(List<String> filePaths) async {
+    _isAddingToQueue = true;
+    _addingTotal = filePaths.length;
+    _addingCompleted = 0;
+    notifyListeners();
+
+    int lastNotified = 0;
     for (final path in filePaths) {
       final file = File(path);
       if (await file.exists()) {
@@ -180,37 +201,60 @@ class TransferController extends ChangeNotifier {
         );
         queue.add(item);
       }
+      _addingCompleted++;
+      if (_addingCompleted - lastNotified >= 50 ||
+          _addingCompleted == _addingTotal) {
+        lastNotified = _addingCompleted;
+        notifyListeners();
+      }
     }
     await _storageManager.saveQueue(queue);
+    _isAddingToQueue = false;
     notifyListeners();
   }
 
   Future<void> addPlatformFilesToQueue(List<PlatformFile> platformFiles) async {
+    _isAddingToQueue = true;
+    _addingTotal = platformFiles.length;
+    _addingCompleted = 0;
+    notifyListeners();
+
+    int lastNotified = 0;
     for (final pf in platformFiles) {
       if (pf.path != null) {
-        final file = File(pf.path!);
-        if (await file.exists()) {
-          final size = await file.length();
-          final name = p.basename(pf.path!);
+        // Use PlatformFile metadata directly to avoid expensive exists/length checks
+        final name = pf.name;
+        final size = pf.size;
 
-          final item = TransferItem(
-            id: '${DateTime.now().microsecondsSinceEpoch}_${pf.path.hashCode}',
-            sourcePath: pf.path!,
-            remotePath: name, // Placed at root of share
-            fileSize: size,
-            sourceIdentifier: pf.identifier,
-          );
-          queue.add(item);
-        }
+        final item = TransferItem(
+          id: '${DateTime.now().microsecondsSinceEpoch}_${pf.path.hashCode}',
+          sourcePath: pf.path!,
+          remotePath: name, // Placed at root of share
+          fileSize: size,
+          sourceIdentifier: pf.identifier,
+        );
+        queue.add(item);
+      }
+      _addingCompleted++;
+      if (_addingCompleted - lastNotified >= 50 ||
+          _addingCompleted == _addingTotal) {
+        lastNotified = _addingCompleted;
+        notifyListeners();
       }
     }
     await _storageManager.saveQueue(queue);
+    _isAddingToQueue = false;
     notifyListeners();
   }
 
   Future<void> addFolderToQueue(String folderPath) async {
     final dir = Directory(folderPath);
     if (!await dir.exists()) return;
+
+    _isAddingToQueue = true;
+    _addingTotal = 0;
+    _addingCompleted = 0;
+    notifyListeners();
 
     final List<File> files = [];
     await for (final entity in dir.list(recursive: true, followLinks: false)) {
@@ -219,6 +263,10 @@ class TransferController extends ChangeNotifier {
       }
     }
 
+    _addingTotal = files.length;
+    notifyListeners();
+
+    int lastNotified = 0;
     for (final file in files) {
       final size = await file.length();
       final relativePath = p.relative(file.path, from: dir.parent.path);
@@ -231,8 +279,16 @@ class TransferController extends ChangeNotifier {
         fileSize: size,
       );
       queue.add(item);
+
+      _addingCompleted++;
+      if (_addingCompleted - lastNotified >= 50 ||
+          _addingCompleted == _addingTotal) {
+        lastNotified = _addingCompleted;
+        notifyListeners();
+      }
     }
     await _storageManager.saveQueue(queue);
+    _isAddingToQueue = false;
     notifyListeners();
   }
 

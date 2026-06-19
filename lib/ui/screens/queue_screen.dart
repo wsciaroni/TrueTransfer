@@ -59,22 +59,30 @@ class _QueueScreenState extends State<QueueScreen> {
 
   void _pickFiles() async {
     try {
+      _controller.setAddingToQueue(true, total: 0);
       final result = await FilePicker.platform.pickFiles(allowMultiple: true);
       if (result != null && result.files.isNotEmpty) {
         await _controller.addPlatformFilesToQueue(result.files);
+      } else {
+        _controller.setAddingToQueue(false);
       }
     } catch (e) {
+      _controller.setAddingToQueue(false);
       _showErrorSnackBar('Error picking files: $e');
     }
   }
 
   void _pickFolder() async {
     try {
+      _controller.setAddingToQueue(true, total: 0);
       final path = await FilePicker.platform.getDirectoryPath();
       if (path != null) {
         await _controller.addFolderToQueue(path);
+      } else {
+        _controller.setAddingToQueue(false);
       }
     } catch (e) {
+      _controller.setAddingToQueue(false);
       _showErrorSnackBar('Error picking folder: $e');
     }
   }
@@ -105,7 +113,7 @@ class _QueueScreenState extends State<QueueScreen> {
       builder: (context, child) {
         final items = _controller.queue.items;
 
-        return Padding(
+        Widget mainContent = Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -126,6 +134,80 @@ class _QueueScreenState extends State<QueueScreen> {
             ],
           ),
         );
+
+        if (_controller.isAddingToQueue) {
+          mainContent = Stack(
+            children: [
+              mainContent,
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  child: Center(
+                    child: Card(
+                      color: Colors.grey[900],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: Colors.grey[800]!),
+                      ),
+                      margin: const EdgeInsets.symmetric(horizontal: 40),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.blueAccent,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'Adding Files to Queue...',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _controller.addingTotal > 0
+                                  ? 'Processed ${_controller.addingCompleted} of ${_controller.addingTotal} files'
+                                  : 'Preparing files...',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[400],
+                              ),
+                            ),
+                            if (_controller.addingTotal > 0) ...[
+                              const SizedBox(height: 16),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value:
+                                      _controller.addingCompleted /
+                                      _controller.addingTotal,
+                                  backgroundColor: Colors.grey[800],
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                        Colors.blueAccent,
+                                      ),
+                                  minHeight: 6,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return mainContent;
       },
     );
   }
@@ -261,7 +343,8 @@ class _QueueScreenState extends State<QueueScreen> {
   }
 
   Widget _buildControlBar(bool hasItems) {
-    final bool disabled = _controller.isTransferring;
+    final bool disabled =
+        _controller.isTransferring || _controller.isAddingToQueue;
     return Row(
       children: [
         Expanded(
@@ -410,7 +493,9 @@ class _QueueScreenState extends State<QueueScreen> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: InkWell(
-                            onTap: _controller.isTransferring
+                            onTap:
+                                (_controller.isTransferring ||
+                                    _controller.isAddingToQueue)
                                 ? null
                                 : () => _editItemDestination(item),
                             child: Text(
@@ -446,7 +531,9 @@ class _QueueScreenState extends State<QueueScreen> {
                   ),
                   const SizedBox(height: 4),
                   InkWell(
-                    onTap: _controller.isTransferring
+                    onTap:
+                        (_controller.isTransferring ||
+                            _controller.isAddingToQueue)
                         ? null
                         : () => _controller.removeItemFromQueue(item.id),
                     child: const Text(

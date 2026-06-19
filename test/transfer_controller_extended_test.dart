@@ -9,6 +9,7 @@ import 'package:truetransfer/services/transfer_controller.dart';
 import 'package:truetransfer/services/smb_service.dart';
 import 'package:truetransfer/utils/storage_manager.dart';
 import 'package:truetransfer/utils/secure_storage.dart';
+import 'package:file_picker/file_picker.dart';
 
 // ---------------------------------------------------------------------------
 // Fake SMB service used across these tests
@@ -295,6 +296,90 @@ void main() {
       expect(notified, isTrue);
       controller.removeListener(() => notified = true);
     });
+
+    test(
+      'updates isAddingToQueue, addingTotal, and addingCompleted during execution',
+      () async {
+        final f1 = File('${tempDir.path}/a.txt')
+          ..writeAsBytesSync(Uint8List(42));
+        final f2 = File('${tempDir.path}/b.txt')
+          ..writeAsBytesSync(Uint8List(10));
+        controller.queue.clear();
+
+        final states = <Map<String, dynamic>>[];
+        void listener() {
+          states.add({
+            'isAdding': controller.isAddingToQueue,
+            'total': controller.addingTotal,
+            'completed': controller.addingCompleted,
+          });
+        }
+
+        controller.addListener(listener);
+
+        await controller.addFilesToQueue([f1.path, f2.path]);
+
+        controller.removeListener(listener);
+        expect(controller.isAddingToQueue, isFalse);
+        expect(
+          states.any((s) => s['isAdding'] == true && s['total'] == 2),
+          isTrue,
+        );
+      },
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // addPlatformFilesToQueue
+  // -------------------------------------------------------------------------
+  group('addPlatformFilesToQueue', () {
+    test('adds PlatformFiles to the queue and updates progress', () async {
+      final f1 = File('${tempDir.path}/pf1.txt')
+        ..writeAsBytesSync(Uint8List(50));
+      final f2 = File('${tempDir.path}/pf2.txt')
+        ..writeAsBytesSync(Uint8List(30));
+      final pf1 = PlatformFile(name: 'pf1.txt', size: 50, path: f1.path);
+      final pf2 = PlatformFile(name: 'pf2.txt', size: 30, path: f2.path);
+
+      controller.queue.clear();
+      final states = <Map<String, dynamic>>[];
+      void listener() {
+        states.add({
+          'isAdding': controller.isAddingToQueue,
+          'total': controller.addingTotal,
+          'completed': controller.addingCompleted,
+        });
+      }
+
+      controller.addListener(listener);
+
+      await controller.addPlatformFilesToQueue([pf1, pf2]);
+
+      controller.removeListener(listener);
+      expect(controller.queue.items.length, 2);
+      expect(controller.queue.items[0].remotePath, 'pf1.txt');
+      expect(controller.queue.items[0].fileSize, 50);
+      expect(controller.queue.items[1].remotePath, 'pf2.txt');
+      expect(controller.queue.items[1].fileSize, 30);
+      expect(controller.isAddingToQueue, isFalse);
+      expect(
+        states.any((s) => s['isAdding'] == true && s['total'] == 2),
+        isTrue,
+      );
+    });
+
+    test('setAddingToQueue updates status and notifies listeners', () {
+      bool notified = false;
+      controller.addListener(() => notified = true);
+
+      controller.setAddingToQueue(true, total: 10, completed: 3);
+
+      expect(controller.isAddingToQueue, isTrue);
+      expect(controller.addingTotal, 10);
+      expect(controller.addingCompleted, 3);
+      expect(notified, isTrue);
+      controller.removeListener(() => notified = true);
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -336,6 +421,36 @@ void main() {
 
       expect(notified, isTrue);
       controller.removeListener(() => notified = true);
+    });
+
+    test('updates progress during folder import', () async {
+      final subDir = Directory('${tempDir.path}/myProgressFolder/sub')
+        ..createSync(recursive: true);
+      File(
+        '${tempDir.path}/myProgressFolder/root.txt',
+      ).writeAsBytesSync(Uint8List(10));
+      File('${subDir.path}/nested.txt').writeAsBytesSync(Uint8List(20));
+
+      controller.queue.clear();
+      final states = <Map<String, dynamic>>[];
+      void listener() {
+        states.add({
+          'isAdding': controller.isAddingToQueue,
+          'total': controller.addingTotal,
+          'completed': controller.addingCompleted,
+        });
+      }
+
+      controller.addListener(listener);
+
+      await controller.addFolderToQueue('${tempDir.path}/myProgressFolder');
+
+      controller.removeListener(listener);
+      expect(controller.isAddingToQueue, isFalse);
+      expect(
+        states.any((s) => s['isAdding'] == true && s['total'] == 2),
+        isTrue,
+      );
     });
   });
 
